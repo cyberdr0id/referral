@@ -4,7 +4,7 @@ CREATE TABLE Users
 	Name VARCHAR NOT NULL,
 	Password VARCHAR NOT NULL,
 	Type VARCHAR CHECK (
-		Type = 'Admin' OR 
+		Type = 'Admin' OR
 		Type = 'User'
 	)
 );
@@ -26,9 +26,9 @@ CREATE TABLE CVs
 	ID SERIAL PRIMARY KEY,
 	Candidate_ID INTEGER NOT NULL,
 	Status VARCHAR CHECK (
-		Status = 'Accepted' OR 
-		Status = 'Rejected' OR 
-		Status = 'Submitted' OR 
+		Status = 'Accepted' OR
+		Status = 'Rejected' OR
+		Status = 'Submitted' OR
 		Status = 'Pending'
 	),
 	OS_File_ID INTEGER,
