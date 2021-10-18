@@ -4,8 +4,10 @@ services:
   postgres:
     image: postgres:alpine
     restart: always
-    env_file:
-      - database.env
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=Server1
+      - POSTGRES_DB=CV
     volumes:
       - ./scripts:/docker-entrypoint-initdb.d/
     ports:
