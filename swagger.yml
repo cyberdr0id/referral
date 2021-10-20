@@ -43,33 +43,9 @@ paths:
               example:
                 token: there_should_be_token
         401:
-          description: Authentication is required
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: integer
-                  message:
-                    type: string
-              example:
-                statusCode: 401
-                message: Authentication is required
+          $ref: '#/responses/Unauthorized'
         500:
-          description: Unexpected server state detected
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: integer
-                  message:
-                    type: string
-              example:
-                statusCode: 500
-                message: Unexpected server state detected
+          $ref: '#/responses/InternalServerError'
   /auth/signup:
     post:
       summary: User registration
@@ -114,47 +90,11 @@ paths:
                 name: nickname
                 password: F72f%AsUO2^kGAsgk1^ma
         400:
-          description: The server cannot or will not process the request due to an apparent client error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: integer
-                  message:
-                    type: string
-              example:
-                statusCode: 400
-                message: The server cannot or will not process the request due to an apparent client error
+          $ref: '#/responses/BadRequest'
         409:
-          description: Request could not be processed because of conflict in the current state of the resource
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: integer
-                  message:
-                    type: string
-              example:
-                statusCode: 409
-                message: Request could not be processed because of conflict in the current state of the resource
+          $ref: '#/responses/Conflict'
         500:
-          description: Unexpected server state detected
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: integer
-                  message:
-                    type: string
-              example:
-                statusCode: 500
-                message: Unexpected server state detected
+          $ref: '#/responses/InternalServerError'
         
   /cv/send:
     post:
@@ -201,47 +141,11 @@ paths:
                 name: name
                 surname: surname
         400:
-          description: The server cannot or will not process the request due to an apparent client error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: integer
-                  message:
-                    type: string
-              example:
-                statusCode: 400
-                message: The server cannot or will not process the request due to an apparent client error
+          $ref: '#/responses/BadRequest'
         401:
-          description: Authentication is required
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: integer
-                  message:
-                    type: string
-              example:
-                statusCode: 401
-                message: Authentication is required
+          $ref: '#/responses/Unauthorized'
         500:
-          description: Unexpected server state detected
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: integer
-                  message:
-                    type: string
-              example:
-                statusCode: 500
-                message: Unexpected server state detected
+          $ref: '#/responses/InternalServerError'
   /cv/requests:
     get:
       summary: Return a list with user requests
@@ -282,33 +186,9 @@ paths:
                 created: 2020-10-19 T 6:54:56 Z
                 updated: 2020-10-19 T 6:54:56 Z
         401:
-          description: Authentication is required
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: integer
-                  message:
-                    type: string
-              example:
-                statusCode: 401
-                message: Authentication is required
+          $ref: '#/responses/Unauthorized'
         500:
-          description: Unexpected server state detected
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: integer
-                  message:
-                    type: string
-              example:
-                statusCode: 500
-                message: Unexpected server state detected
+          $ref: '#/responses/InternalServerError'
   /cv/load/{id}:
     get:
       summary: Load CV of a particular candidate
@@ -338,61 +218,13 @@ paths:
               example:
                 link: example.com/path/to/file.txt
         400:
-          description: The server cannot or will not process the request due to an apparent client error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: integer
-                  message:
-                    type: string
-              example:
-                statusCode: 400
-                message: The server cannot or will not process the request due to an apparent client error
+          $ref: '#/responses/BadRequest'
         401:
-          description: Authentication is required
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: integer
-                  message:
-                    type: string
-              example:
-                statusCode: 401
-                message: Authentication is required
+          $ref: '#/responses/Unauthorized'
         404:
-          description: The requested resource could not be found but may be available in the future
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: integer
-                  message:
-                    type: string
-              example:
-                statusCode: 404
-                message: The requested resource could not be found but may be available in the future
+          $ref: '#/responses/NotFound'
         500:
-          description: Unexpected server state detected
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: integer
-                  message:
-                    type: string
-              example:
-                statusCode: 500
-                message: Unexpected server state detected
+          $ref: '#/responses/InternalServerError'
   /cv/filter/{type}:
     get:
       summary: Filter CVs
@@ -433,62 +265,85 @@ paths:
                 surname: surname
                 cvosfileid: 256
         400:
-          description: The server cannot or will not process the request due to an apparent client error
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: integer
-                  message:
-                    type: string
-              example:
-                statusCode: 400
-                message: The server cannot or will not process the request due to an apparent client error
+          $ref: '#/responses/BadRequest'
         401:
-          description: Authentication is required
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: integer
-                  message:
-                    type: string
-              example:
-                statusCode: 401
-                message: Authentication is required
+          $ref: '#/responses/Unauthorized'
         404:
-          description: The requested resource could not be found but may be available in the future
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: integer
-                  message:
-                    type: string
-              example:
-                statusCode: 404
-                message: The requested resource could not be found but may be available in the future
+          $ref: '#/responses/NotFound'
         500:
-          description: Unexpected server state detected
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  statusCode:
-                    type: integer
-                  message:
-                    type: string
-              example:
-                statusCode: 500
-                message: Unexpected server state detected
+          $ref: '#/responses/InternalServerError'
         
+responses:
+  InternalServerError:
+    description: Unexpected server state detected
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            statusCode:
+              type: integer
+            message:
+              type: string
+        example:
+          statusCode: 500
+          message: Unexpected server state detected
+  NotFound:
+    description: The requested resource could not be found but may be available in the future
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            statusCode:
+              type: integer
+            message:
+              type: string
+        example:
+          statusCode: 404
+          message: The requested resource could not be found but may be available in the future
+  Unauthorized:
+    description: Authentication is required
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            statusCode:
+              type: integer
+            message:
+              type: string
+        example:
+          statusCode: 401
+          message: Authentication is required
+  BadRequest:
+    description: The server cannot or will not process the request due to an apparent client error
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            statusCode:
+              type: integer
+            message:
+              type: string
+        example:
+          statusCode: 400
+          message: The server cannot or will not process the request due to an apparent client error
+  Conflict:
+    description: Request could not be processed because of conflict in the current state of the resource
+    content:
+      application/json:
+        schema:
+          type: object
+          properties:
+            statusCode:
+              type: integer
+            message:
+              type: string
+        example:
+          statusCode: 409
+          message: Request could not be processed because of conflict in the current state of the resource
 components:
   securitySchemes:
     referalAuth:
