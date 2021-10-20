@@ -197,9 +197,9 @@ paths:
                     type: string
                     format: hash
               example:
-                id: 256
-                name: nickname
-                password: F72f%AsUO2^kGAsgk1^ma
+                id: 1
+                name: name
+                surname: surname
         400:
           description: The server cannot or will not process the request due to an apparent client error
           content:
