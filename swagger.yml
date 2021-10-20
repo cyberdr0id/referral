@@ -15,20 +15,7 @@ paths:
         - auth
       requestBody:
         description: User logging in
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                name:
-                  type: string
-                password:
-                  type: string
-                  format: hash
-            example:
-              name: nickname
-              password: F72f%AsUO2^kGAsgk1^ma
+        $ref: '#/components/requestBodies/AuthBody'
       responses:
         200:
           description: User successfuly logged in
@@ -43,9 +30,9 @@ paths:
               example:
                 token: there_should_be_token
         401:
-          $ref: '#/responses/Unauthorized'
+          $ref: '#/components/responses/Unauthorized'
         500:
-          $ref: '#/responses/InternalServerError'
+          $ref: '#/components/responses/InternalServerError'
   /auth/signup:
     post:
       summary: User registration
@@ -53,23 +40,7 @@ paths:
         - auth
       requestBody:
         description: User creating
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                id:
-                  type: integer
-                name:
-                  type: string
-                password:
-                  type: string
-                  format: hash
-            example:
-              id: 256
-              name: nickname
-              password: F72f%AsUO2^kGAsgk1^ma
+        $ref: '#/components/requestBodies/AuthBody'
       responses:
         201:
           description: User created
@@ -90,11 +61,11 @@ paths:
                 name: nickname
                 password: F72f%AsUO2^kGAsgk1^ma
         400:
-          $ref: '#/responses/BadRequest'
+          $ref: '#/components/responses/BadRequest'
         409:
-          $ref: '#/responses/Conflict'
+          $ref: '#/components/responses/Conflict'
         500:
-          $ref: '#/responses/InternalServerError'
+          $ref: '#/components/responses/InternalServerError'
         
   /cv/send:
     post:
@@ -141,11 +112,11 @@ paths:
                 name: name
                 surname: surname
         400:
-          $ref: '#/responses/BadRequest'
+          $ref: '#/components/responses/BadRequest'
         401:
-          $ref: '#/responses/Unauthorized'
+          $ref: '#/components/responses/Unauthorized'
         500:
-          $ref: '#/responses/InternalServerError'
+          $ref: '#/components/responses/InternalServerError'
   /cv/requests:
     get:
       summary: Return a list with user requests
@@ -186,9 +157,9 @@ paths:
                 created: 2020-10-19 T 6:54:56 Z
                 updated: 2020-10-19 T 6:54:56 Z
         401:
-          $ref: '#/responses/Unauthorized'
+          $ref: '#/components/responses/Unauthorized'
         500:
-          $ref: '#/responses/InternalServerError'
+          $ref: '#/components/responses/InternalServerError'
   /cv/load/{id}:
     get:
       summary: Load CV of a particular candidate
@@ -218,13 +189,13 @@ paths:
               example:
                 link: example.com/path/to/file.txt
         400:
-          $ref: '#/responses/BadRequest'
+          $ref: '#/components/responses/BadRequest'
         401:
-          $ref: '#/responses/Unauthorized'
+          $ref: '#/components/responses/Unauthorized'
         404:
-          $ref: '#/responses/NotFound'
+          $ref: '#/components/responses/NotFound'
         500:
-          $ref: '#/responses/InternalServerError'
+          $ref: '#/components/responses/InternalServerError'
   /cv/filter/{type}:
     get:
       summary: Filter CVs
@@ -265,85 +236,14 @@ paths:
                 surname: surname
                 cvosfileid: 256
         400:
-          $ref: '#/responses/BadRequest'
+          $ref: '#/components/responses/BadRequest'
         401:
-          $ref: '#/responses/Unauthorized'
+          $ref: '#/components/responses/Unauthorized'
         404:
-          $ref: '#/responses/NotFound'
+          $ref: '#/components/responses/NotFound'
         500:
-          $ref: '#/responses/InternalServerError'
-        
-responses:
-  InternalServerError:
-    description: Unexpected server state detected
-    content:
-      application/json:
-        schema:
-          type: object
-          properties:
-            statusCode:
-              type: integer
-            message:
-              type: string
-        example:
-          statusCode: 500
-          message: Unexpected server state detected
-  NotFound:
-    description: The requested resource could not be found but may be available in the future
-    content:
-      application/json:
-        schema:
-          type: object
-          properties:
-            statusCode:
-              type: integer
-            message:
-              type: string
-        example:
-          statusCode: 404
-          message: The requested resource could not be found but may be available in the future
-  Unauthorized:
-    description: Authentication is required
-    content:
-      application/json:
-        schema:
-          type: object
-          properties:
-            statusCode:
-              type: integer
-            message:
-              type: string
-        example:
-          statusCode: 401
-          message: Authentication is required
-  BadRequest:
-    description: The server cannot or will not process the request due to an apparent client error
-    content:
-      application/json:
-        schema:
-          type: object
-          properties:
-            statusCode:
-              type: integer
-            message:
-              type: string
-        example:
-          statusCode: 400
-          message: The server cannot or will not process the request due to an apparent client error
-  Conflict:
-    description: Request could not be processed because of conflict in the current state of the resource
-    content:
-      application/json:
-        schema:
-          type: object
-          properties:
-            statusCode:
-              type: integer
-            message:
-              type: string
-        example:
-          statusCode: 409
-          message: Request could not be processed because of conflict in the current state of the resource
+          $ref: '#/components/responses/InternalServerError'
+
 components:
   securitySchemes:
     referalAuth:
@@ -411,3 +311,73 @@ components:
         updated:
           type: string
           format: timestamp
+    Error:
+      type: object
+      properties:
+        statusCode:
+          type: integer
+        message:
+          type: string
+  responses:
+    InternalServerError:
+      description: Unexpected server state detected
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error' 
+          example:
+            statusCode: 500
+            message: Unexpected server state detected
+    NotFound:
+      description: The requested resource could not be found but may be available in the future
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error' 
+          example:
+            statusCode: 404
+            message: The requested resource could not be found but may be available in the future
+    Unauthorized:
+      description: Authentication is required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error' 
+          example:
+            statusCode: 401
+            message: Authentication is required
+    BadRequest:
+      description: The server cannot or will not process the request due to an apparent client error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error' 
+          example:
+            statusCode: 400
+            message: The server cannot or will not process the request due to an apparent client error
+    Conflict:
+      description: Request could not be processed because of conflict in the current state of the resource
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error' 
+          example:
+            statusCode: 409
+            message: Request could not be processed because of conflict in the current state of the resource
+  requestBodies:
+    AuthBody:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+              password:
+                type: string
+                format: hash
+          example:
+            name: nickname
+            password: F72f%AsUO2^kGAsgk1^ma
+
