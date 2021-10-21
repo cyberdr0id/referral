@@ -1,6 +1,6 @@
 openapi: 3.0.0
 info:
-  description: The service expose a RESTful API to send a candidate and its CV
+  description: The service exposes a RESTful API to send a candidate and its CV
   version: 1.0.0
   title: Referal
   contact:
