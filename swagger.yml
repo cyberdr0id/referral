@@ -2,7 +2,6 @@ openapi: 3.0.0
 info:
   description: The service exposes a RESTful API to send a candidate and its CV
   version: 1.0.0
-  title: Referal
   contact:
     email: akulovdc@gmail.com
 servers:
@@ -26,7 +25,7 @@ paths:
                 properties:
                   token:
                     type: string
-                    format: hash
+                    format: JWT
               example:
                 token: there_should_be_token
         401:
@@ -51,15 +50,8 @@ paths:
                 properties:
                   id:
                     type: integer
-                  name:
-                    type: string
-                  password:
-                    type: string
-                    format: hash
               example:
                 id: 256
-                name: nickname
-                password: F72f%AsUO2^kGAsgk1^ma
         400:
           $ref: '#/components/responses/BadRequest'
         409:
@@ -84,12 +76,15 @@ paths:
               properties:
                 fileId:
                   type: integer
+                file:
+                  type: string
                 candidateName:
                   type: string
                 candidateSurname:
                   type: string
             example:
               fileId: 1
+              file: example.com/path/to/file.txt
               candidateName: Name
               candidateSurname: Surname
       responses:
@@ -106,7 +101,7 @@ paths:
                     type: string
                   password:
                     type: string
-                    format: hash
+                    format: JWT
               example:
                 id: 1
                 name: name
@@ -132,23 +127,7 @@ paths:
               schema:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    id: 
-                      type: integer
-                    userid:
-                      type: integer
-                    candidateid: 
-                      type: integer
-                    status:
-                      type: string
-                      enum: [Rejected, Accepted, Submitted]
-                    created:
-                      type: string
-                      format: timestamp
-                    updated:
-                      type: string
-                      format: timestamp
+                  $ref: '#/components/schemas/Request'
               example:
                 id: 1
                 userid: 2
@@ -174,8 +153,6 @@ paths:
           required: true
           schema:
             type: integer
-          example:
-            id: 1
       responses:
         200:
           description: CV successfuly loaded
@@ -220,16 +197,7 @@ paths:
               schema:
                 type: array
                 items:
-                  type: object
-                  properties:
-                    id: 
-                      type: integer
-                    name:
-                      type: string
-                    surname:
-                      type: string
-                    cvosfileid:
-                      type: integer
+                  $ref: '#/components/schemas/Candidate'
               example:
                 id: 1
                 name: name
@@ -260,7 +228,7 @@ components:
           type: string
         password:
           type: string
-          format: hash
+          format: JWT
         isadmin:
           type: boolean
           default: false
@@ -376,8 +344,7 @@ components:
                 type: string
               password:
                 type: string
-                format: hash
+                format: JWT
           example:
             name: nickname
             password: F72f%AsUO2^kGAsgk1^ma
-
