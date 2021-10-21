@@ -162,10 +162,10 @@ paths:
               schema:
                 type: object
                 properties:
-                  link:
+                  file:
                     type: string
               example:
-                link: file.txt
+                file: file.txt
         400:
           $ref: '#/components/responses/BadRequest'
         401:
