@@ -141,11 +141,8 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  file:
-                    type: string
-                    format: binary
+                type: string
+                format: binary
               example:
                 file: file.pdf
         400:
