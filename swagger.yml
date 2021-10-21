@@ -85,7 +85,7 @@ paths:
                   type: string
             example:
               fileId: 1
-              file: example.com/path/to/file.txt
+              file: file.txt
               candidateName: Name
               candidateSurname: Surname
       responses:
@@ -102,7 +102,7 @@ paths:
                     type: string
                   password:
                     type: string
-                    format: JWT
+                    format: hash
               example:
                 id: 1
                 name: name
@@ -165,7 +165,7 @@ paths:
                   link:
                     type: string
               example:
-                link: example.com/path/to/file.txt
+                link: file.txt
         400:
           $ref: '#/components/responses/BadRequest'
         401:
@@ -229,7 +229,7 @@ components:
           type: string
         password:
           type: string
-          format: JWT
+          format: hash
         isadmin:
           type: boolean
           default: false
@@ -345,7 +345,7 @@ components:
                 type: string
               password:
                 type: string
-                format: JWT
+                format: hash
           example:
             name: nickname
             password: F72f%AsUO2^kGAsgk1^ma
