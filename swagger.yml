@@ -71,7 +71,7 @@ paths:
         description: Sending resume by user
         required: true
         content:
-          application/json:
+          multipart/form-data:
             schema:
               type: object
               properties:
@@ -79,6 +79,7 @@ paths:
                   type: integer
                 file:
                   type: string
+                  format: binary
                 candidateName:
                   type: string
                 candidateSurname:
@@ -158,12 +159,13 @@ paths:
         200:
           description: CV successfuly loaded
           content:
-            application/json:
+            application/pdf:
               schema:
                 type: object
                 properties:
                   file:
                     type: string
+                    format: binary
               example:
                 file: file.txt
         400:
