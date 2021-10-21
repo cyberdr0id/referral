@@ -18,7 +18,7 @@ paths:
         $ref: '#/components/requestBodies/AuthBody'
       responses:
         200:
-          description: User successfuly logged in
+          description: User successfully logged in
           content:
             application/json:
               schema:
