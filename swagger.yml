@@ -75,19 +75,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  id:
-                    type: integer
-                  name:
-                    type: string
-                  password:
-                    type: string
-                    format: hash
-              example:
-                id: 1
-                name: name
-                surname: surname
+                $ref: '#/components/schemas/Candidate'
         400:
           $ref: '#/components/responses/BadRequest'
         401:
@@ -110,13 +98,7 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Request'
-              example:
-                id: 1
-                userid: 2
-                candidateid: 3
-                status: Rejected
-                created: 2020-10-19 T 6:54:56 Z
-                updated: 2020-10-19 T 6:54:56 Z
+              
         401:
           $ref: '#/components/responses/Unauthorized'
         500:
@@ -259,6 +241,13 @@ components:
         updated:
           type: string
           format: timestamp
+      example:
+        id: 1
+        userid: 2
+        candidateid: 3
+        status: Rejected
+        created: 2020-10-19 T 6:54:56 Z
+        updated: 2020-10-19 T 6:54:56 Z
     Error:
       type: object
       properties:
@@ -312,6 +301,7 @@ components:
           example:
             statusCode: 409
             message: Request could not be processed because of conflict in the current state of the resource
+    
   requestBodies:
     AuthBody:
       required: true
