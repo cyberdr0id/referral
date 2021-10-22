@@ -47,7 +47,10 @@ paths:
           content:
             application/json:
               schema:
-                type: integer
+                type: object
+                properties:
+                id:
+                  type: integer
               example:
                 id: 256
         400:
