@@ -47,10 +47,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  id:
-                    type: integer
+                type: integer
               example:
                 id: 256
         400:
@@ -127,8 +124,6 @@ paths:
                 format: binary
               example:
                 file: file.pdf
-        400:
-          $ref: '#/components/responses/BadRequest'
         401:
           $ref: '#/components/responses/Unauthorized'
         404:
@@ -165,8 +160,6 @@ paths:
                 name: name
                 surname: surname
                 cvosfileid: 256
-        400:
-          $ref: '#/components/responses/BadRequest'
         401:
           $ref: '#/components/responses/Unauthorized'
         404:
