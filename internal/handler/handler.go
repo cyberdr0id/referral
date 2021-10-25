@@ -1,3 +1,4 @@
+// Package handler responsible for rounting.
 package handler
 
 import (
@@ -5,10 +6,8 @@ import (
 	"github.com/gorilla/mux"
 )
 
-type Handler struct {
-}
-
-func (h *Handler) InitRoutes() *mux.Router {
+// InitRoutes initialize all endpoints.
+func InitRoutes() *mux.Router {
 	r := mux.NewRouter()
 
 	r.HandleFunc("/auth/login", controllers.LogIn).Methods("POST")

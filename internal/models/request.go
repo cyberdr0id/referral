@@ -2,6 +2,7 @@ package models
 
 import "time"
 
+// Request presents model of request.
 type Request struct {
 	ID          int       `json:"id"`
 	UserID      int       `json:"userid"`

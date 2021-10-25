@@ -1,3 +1,4 @@
+// Package main presents main part that starts application.
 package main
 
 import (
@@ -9,9 +10,8 @@ import (
 
 func main() {
 	srv := new(server.Server)
-	handlers := new(handler.Handler)
 
-	if err := srv.Run("8000", handlers.InitRoutes()); err != nil {
+	if err := srv.Run("8000", handler.InitRoutes()); err != nil {
 		log.Fatalf("error while starting server: %s", err.Error())
 	}
 }
