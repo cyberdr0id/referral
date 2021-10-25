@@ -1,8 +1,7 @@
 package handler
 
 import (
-	"net/http"
-
+	"github.com/cyberdr0id/cv-web-service/internal/controllers"
 	"github.com/gorilla/mux"
 )
 
@@ -12,25 +11,13 @@ type Handler struct {
 func (h *Handler) InitRoutes() *mux.Router {
 	r := mux.NewRouter()
 
-	r.HandleFunc("/auth/login", func(rw http.ResponseWriter, r *http.Request) {
+	r.HandleFunc("/auth/login", controllers.LogIn).Methods("POST")
+	r.HandleFunc("/auth/signup", controllers.SignUp).Methods("POST")
 
-	}).Methods("POST")
-	r.HandleFunc("/auth/signup", func(rw http.ResponseWriter, r *http.Request) {
-
-	}).Methods("POST")
-
-	r.HandleFunc("/cv/send", func(rw http.ResponseWriter, r *http.Request) {
-
-	}).Methods("POST")
-	r.HandleFunc("/cv/requests", func(rw http.ResponseWriter, r *http.Request) {
-
-	}).Methods("GET")
-	r.HandleFunc("/cv/load/{id}", func(rw http.ResponseWriter, r *http.Request) {
-
-	}).Methods("GET")
-	r.HandleFunc("/cv/filter/{type}", func(rw http.ResponseWriter, r *http.Request) {
-
-	}).Methods("GET")
+	r.HandleFunc("/cv/send", controllers.SendCV).Methods("POST")
+	r.HandleFunc("/cv/requests", controllers.GetRequests).Methods("GET")
+	r.HandleFunc("/cv/load/{id}", controllers.LoadCV).Methods("GET")
+	r.HandleFunc("/cv/filter/{type}", controllers.FilterCV).Methods("GET")
 
 	return r
 }
