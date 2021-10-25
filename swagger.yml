@@ -15,7 +15,7 @@ paths:
         - auth
       requestBody:
         description: User logging in
-        $ref: '#/components/requestBodies/AuthBody'
+        $ref: "#/components/requestBodies/AuthBody"
       responses:
         200:
           description: User successfully logged in
@@ -30,9 +30,9 @@ paths:
               example:
                 token: there_should_be_token
         401:
-          $ref: '#/components/responses/Unauthorized'
+          $ref: "#/components/responses/Unauthorized"
         500:
-          $ref: '#/components/responses/InternalServerError'
+          $ref: "#/components/responses/InternalServerError"
   /auth/signup:
     post:
       summary: User registration
@@ -40,7 +40,7 @@ paths:
         - auth
       requestBody:
         description: User creating
-        $ref: '#/components/requestBodies/AuthBody'
+        $ref: "#/components/requestBodies/AuthBody"
       responses:
         201:
           description: User created
@@ -49,17 +49,17 @@ paths:
               schema:
                 type: object
                 properties:
-                  id:
-                    type: integer
+                id:
+                  type: integer
               example:
                 id: 256
         400:
-          $ref: '#/components/responses/BadRequest'
+          $ref: "#/components/responses/BadRequest"
         409:
-          $ref: '#/components/responses/Conflict'
+          $ref: "#/components/responses/Conflict"
         500:
-          $ref: '#/components/responses/InternalServerError'
-        
+          $ref: "#/components/responses/InternalServerError"
+
   /cv/send:
     post:
       summary: Send CV of a particular candidate
@@ -68,51 +68,20 @@ paths:
       security:
         - referalAuth: []
       requestBody:
-        description: Sending resume by user
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                fileId:
-                  type: integer
-                file:
-                  type: string
-                candidateName:
-                  type: string
-                candidateSurname:
-                  type: string
-            example:
-              fileId: 1
-              file: file.txt
-              candidateName: Name
-              candidateSurname: Surname
+        $ref: "#/components/requestBodies/CvSendBody"
       responses:
         201:
           description: Candidate loaded
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  id:
-                    type: integer
-                  name:
-                    type: string
-                  password:
-                    type: string
-                    format: hash
-              example:
-                id: 1
-                name: name
-                surname: surname
+                $ref: "#/components/schemas/Candidate"
         400:
-          $ref: '#/components/responses/BadRequest'
+          $ref: "#/components/responses/BadRequest"
         401:
-          $ref: '#/components/responses/Unauthorized'
+          $ref: "#/components/responses/Unauthorized"
         500:
-          $ref: '#/components/responses/InternalServerError'
+          $ref: "#/components/responses/InternalServerError"
   /cv/requests:
     get:
       summary: Return a list with user requests
@@ -128,18 +97,12 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Request'
-              example:
-                id: 1
-                userid: 2
-                candidateid: 3
-                status: Rejected
-                created: 2020-10-19 T 6:54:56 Z
-                updated: 2020-10-19 T 6:54:56 Z
+                  $ref: "#/components/schemas/Request"
+
         401:
-          $ref: '#/components/responses/Unauthorized'
+          $ref: "#/components/responses/Unauthorized"
         500:
-          $ref: '#/components/responses/InternalServerError'
+          $ref: "#/components/responses/InternalServerError"
   /cv/load/{id}:
     get:
       summary: Load CV of a particular candidate
@@ -158,22 +121,18 @@ paths:
         200:
           description: CV successfuly loaded
           content:
-            application/json:
+            application/pdf:
               schema:
-                type: object
-                properties:
-                  link:
-                    type: string
+                type: string
+                format: binary
               example:
-                link: file.txt
-        400:
-          $ref: '#/components/responses/BadRequest'
+                file: file.pdf
         401:
-          $ref: '#/components/responses/Unauthorized'
+          $ref: "#/components/responses/Unauthorized"
         404:
-          $ref: '#/components/responses/NotFound'
+          $ref: "#/components/responses/NotFound"
         500:
-          $ref: '#/components/responses/InternalServerError'
+          $ref: "#/components/responses/InternalServerError"
   /cv/filter/{type}:
     get:
       summary: Filter CVs
@@ -198,20 +157,15 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/Candidate'
-              example:
-                id: 1
-                name: name
-                surname: surname
-                cvosfileid: 256
+                  $ref: "#/components/schemas/Candidate"
         400:
-          $ref: '#/components/responses/BadRequest'
+          $ref: "#/components/responses/BadRequest"
         401:
-          $ref: '#/components/responses/Unauthorized'
+          $ref: "#/components/responses/Unauthorized"
         404:
-          $ref: '#/components/responses/NotFound'
+          $ref: "#/components/responses/NotFound"
         500:
-          $ref: '#/components/responses/InternalServerError'
+          $ref: "#/components/responses/InternalServerError"
 
 components:
   securitySchemes:
@@ -280,6 +234,13 @@ components:
         updated:
           type: string
           format: timestamp
+      example:
+        id: 1
+        userid: 2
+        candidateid: 3
+        status: Rejected
+        created: 2020-10-19 T 6:54:56 Z
+        updated: 2020-10-19 T 6:54:56 Z
     Error:
       type: object
       properties:
@@ -293,7 +254,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error' 
+            $ref: "#/components/schemas/Error"
           example:
             statusCode: 500
             message: Unexpected server state detected
@@ -302,7 +263,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error' 
+            $ref: "#/components/schemas/Error"
           example:
             statusCode: 404
             message: The requested resource could not be found but may be available in the future
@@ -311,7 +272,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error' 
+            $ref: "#/components/schemas/Error"
           example:
             statusCode: 401
             message: Authentication is required
@@ -320,7 +281,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error' 
+            $ref: "#/components/schemas/Error"
           example:
             statusCode: 400
             message: The server cannot or will not process the request due to an apparent client error
@@ -329,10 +290,11 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/Error' 
+            $ref: "#/components/schemas/Error"
           example:
             statusCode: 409
             message: Request could not be processed because of conflict in the current state of the resource
+
   requestBodies:
     AuthBody:
       required: true
@@ -349,3 +311,22 @@ components:
           example:
             name: nickname
             password: F72f%AsUO2^kGAsgk1^ma
+    CvSendBody:
+      description: Sending resume by user
+      required: true
+      content:
+        multipart/form-data:
+          schema:
+            type: object
+            properties:
+              file:
+                type: string
+                format: binary
+              candidateName:
+                type: string
+              candidateSurname:
+                type: string
+          example:
+            file: file.pdf
+            candidateName: Name
+            candidateSurname: Surname
