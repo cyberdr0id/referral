@@ -2,7 +2,7 @@
 package handler
 
 import (
-	"github.com/cyberdr0id/cv-web-service/internal/controllers"
+	"github.com/cyberdr0id/referral/internal/controllers"
 	"github.com/gorilla/mux"
 )
 

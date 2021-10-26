@@ -4,8 +4,8 @@ package main
 import (
 	"log"
 
-	"github.com/cyberdr0id/cv-web-service/internal/handler"
-	"github.com/cyberdr0id/cv-web-service/internal/server"
+	"github.com/cyberdr0id/referral/internal/handler"
+	"github.com/cyberdr0id/referral/internal/server"
 )
 
 func main() {
