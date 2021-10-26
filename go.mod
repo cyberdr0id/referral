@@ -1,4 +1,4 @@
-module github.com/cyberdr0id/cv-web-service
+module github.com/cyberdr0id/referral
 
 go 1.17
 
