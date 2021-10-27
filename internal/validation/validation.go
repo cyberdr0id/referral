@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	// errInvalidLength presents an error when user input data with invalid length.
+	// errInvalidLength presents an error when user enters data with invalid length.
 	errInvalidLength = errors.New("input parameter has invalid length")
 
 	// errParameterRequired presents an error when user didn't fill some information.
@@ -19,16 +19,16 @@ var (
 
 // CheckAuthorizationRequestData validates user authorization data.
 func CheckAuthorizationRequestData(name, password string) error {
+	if name == "" || password == "" {
+		return errParameterRequired
+	}
+
 	if len(name) < 6 || len(name) > 18 {
 		return errInvalidLength
 	}
 
 	if len(password) < 6 || len(password) > 18 {
 		return errInvalidLength
-	}
-
-	if name == "" || password == "" {
-		return errParameterRequired
 	}
 
 	return nil
