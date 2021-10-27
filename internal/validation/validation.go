@@ -15,6 +15,9 @@ var (
 
 	// errInvalidFile presents an error when user load file with invalid name or wrong extension.
 	errInvalidFile = errors.New("invalid format or name of input file")
+
+	// errInvalidName presents an error when user send candidate with invalid name/surname.
+	errInvalidName = errors.New("input name didn't match to the desired format")
 )
 
 // CheckAuthorizationRequestData validates user authorization data.
@@ -43,6 +46,16 @@ func CheckCvRequestData(fileName, candidateName, candidateSurname string) error 
 	isRightFile, _ := regexp.MatchString("([a-zA-Z0-9\\s_\\.\\-\\(\\):])+(.PDF|.pdf)$", fileName)
 	if !isRightFile {
 		return errInvalidFile
+	}
+
+	isValidName, _ := regexp.MatchString("(^[A-Za-zА-Яа-я]{2,16})?([ ]{0,1})([A-Za-zА-Яа-я]{2,16})?", candidateName)
+	if !isValidName {
+		return errInvalidName
+	}
+
+	isValidSurname, _ := regexp.MatchString("(^[A-Za-zА-Яа-я]{2,16})?([ ]{0,1})([A-Za-zА-Яа-я]{2,16})?", candidateSurname)
+	if !isValidSurname {
+		return errInvalidName
 	}
 
 	return nil
