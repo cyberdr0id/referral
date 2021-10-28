@@ -15,7 +15,7 @@ paths:
         - auth
       requestBody:
         description: User logging in
-        $ref: "#/components/requestBodies/AuthBody"
+        $ref: '#/components/requestBodies/AuthBody'
       responses:
         200:
           description: User successfully logged in
@@ -30,9 +30,9 @@ paths:
               example:
                 token: there_should_be_token
         401:
-          $ref: "#/components/responses/Unauthorized"
+          $ref: '#/components/responses/Unauthorized'
         500:
-          $ref: "#/components/responses/InternalServerError"
+          $ref: '#/components/responses/InternalServerError'
   /auth/signup:
     post:
       summary: User registration
@@ -40,27 +40,24 @@ paths:
         - auth
       requestBody:
         description: User creating
-        $ref: "#/components/requestBodies/AuthBody"
+        $ref: '#/components/requestBodies/AuthBody'
       responses:
         201:
           description: User created
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                id:
-                  type: integer
+                type: integer
               example:
                 id: 256
-        400:
-          $ref: "#/components/responses/BadRequest"
+        401:
+          $ref: '#/components/responses/BadRequest'
         409:
-          $ref: "#/components/responses/Conflict"
+          $ref: '#/components/responses/Conflict'
         500:
-          $ref: "#/components/responses/InternalServerError"
-
-  /cv/send:
+          $ref: '#/components/responses/InternalServerError'
+        
+  /referrals:
     post:
       summary: Send CV of a particular candidate
       tags:
@@ -68,21 +65,18 @@ paths:
       security:
         - referalAuth: []
       requestBody:
-        $ref: "#/components/requestBodies/CvSendBody"
+        $ref: '#/components/requestBodies/CvSendBody'
       responses:
         201:
           description: Candidate loaded
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/Candidate"
-        400:
-          $ref: "#/components/responses/BadRequest"
+                $ref: '#/components/schemas/Candidate'
         401:
-          $ref: "#/components/responses/Unauthorized"
+          $ref: '#/components/responses/Unauthorized'
         500:
-          $ref: "#/components/responses/InternalServerError"
-  /cv/requests:
+          $ref: '#/components/responses/InternalServerError'
     get:
       summary: Return a list with user requests
       tags:
@@ -97,15 +91,15 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: "#/components/schemas/Request"
-
+                  $ref: '#/components/schemas/Request'
+              
         401:
-          $ref: "#/components/responses/Unauthorized"
+          $ref: '#/components/responses/Unauthorized'
         500:
-          $ref: "#/components/responses/InternalServerError"
-  /cv/load/{id}:
+          $ref: '#/components/responses/InternalServerError' 
+  /cvs/{id}:
     get:
-      summary: Load CV of a particular candidate
+      summary: Download CV of a particular candidate
       tags:
         - cv
       security:
@@ -128,44 +122,11 @@ paths:
               example:
                 file: file.pdf
         401:
-          $ref: "#/components/responses/Unauthorized"
+          $ref: '#/components/responses/Unauthorized'
         404:
-          $ref: "#/components/responses/NotFound"
+          $ref: '#/components/responses/NotFound'
         500:
-          $ref: "#/components/responses/InternalServerError"
-  /cv/filter/{type}:
-    get:
-      summary: Filter CVs
-      tags:
-        - cv
-      security:
-        - referalAuth: []
-      parameters:
-        - name: type
-          in: path
-          description: Should be entered filtered type
-          required: true
-          schema:
-            type: string
-          example:
-            type: name
-      responses:
-        200:
-          description: Getting filtered candidates
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Candidate"
-        400:
-          $ref: "#/components/responses/BadRequest"
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        404:
-          $ref: "#/components/responses/NotFound"
-        500:
-          $ref: "#/components/responses/InternalServerError"
+          $ref: '#/components/responses/InternalServerError'
 
 components:
   securitySchemes:
@@ -254,7 +215,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/Error"
+            $ref: '#/components/schemas/Error' 
           example:
             statusCode: 500
             message: Unexpected server state detected
@@ -263,7 +224,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/Error"
+            $ref: '#/components/schemas/Error' 
           example:
             statusCode: 404
             message: The requested resource could not be found but may be available in the future
@@ -272,7 +233,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/Error"
+            $ref: '#/components/schemas/Error' 
           example:
             statusCode: 401
             message: Authentication is required
@@ -281,7 +242,7 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/Error"
+            $ref: '#/components/schemas/Error' 
           example:
             statusCode: 400
             message: The server cannot or will not process the request due to an apparent client error
@@ -290,11 +251,11 @@ components:
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/Error"
+            $ref: '#/components/schemas/Error' 
           example:
             statusCode: 409
             message: Request could not be processed because of conflict in the current state of the resource
-
+    
   requestBodies:
     AuthBody:
       required: true
