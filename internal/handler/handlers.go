@@ -77,12 +77,12 @@ func SignUp(rw http.ResponseWriter, r *http.Request) {
 	var request AuthRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 
-	if err := request.CheckDataCorrectness(); err != nil {
+	if err := request.CheckSignUpRequest(); err != nil {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -129,7 +129,7 @@ func SendCandidate(rw http.ResponseWriter, r *http.Request) {
 	request.candidateName = r.FormValue("candidateName")
 	request.candidateSurname = r.FormValue("candidateSurname")
 
-	if err := request.CheckDataCorrectness(); err != nil {
+	if err := request.CheckCandidateSendingRequest(); err != nil {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -164,8 +164,8 @@ func DownloadCV(rw http.ResponseWriter, r *http.Request) {
 
 }
 
-// CheckDataCorrectness validates data after sending a candidate
-func (r *CandidateRequest) CheckDataCorrectness() error {
+// CheckCandidateSendingRequest validates data after sending a candidate
+func (r *CandidateRequest) CheckCandidateSendingRequest() error {
 	if len(r.candidateName) == 0 || len(r.candidateSurname) == 0 || len(r.fileName) == 0 {
 		return errParameterRequired
 	}
@@ -188,8 +188,8 @@ func (r *CandidateRequest) CheckDataCorrectness() error {
 	return nil
 }
 
-// CheckDataCorrectness validates data after login/signup
-func (r *AuthRequest) CheckDataCorrectness() error {
+// CheckSignUpRequest validates data after login/signup
+func (r *AuthRequest) CheckSignUpRequest() error {
 	if r.name == "" || r.password == "" {
 		return errParameterRequired
 	}
