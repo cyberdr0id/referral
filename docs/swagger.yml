@@ -50,7 +50,7 @@ paths:
                 type: integer
               example:
                 id: 256
-        401:
+        400:
           $ref: "#/components/responses/BadRequest"
         409:
           $ref: "#/components/responses/Conflict"
