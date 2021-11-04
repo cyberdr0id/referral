@@ -3,11 +3,12 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"regexp"
-	"time"
 
-	"github.com/gorilla/mux"
+	"github.com/cyberdr0id/referral/internal/repository"
+	"github.com/cyberdr0id/referral/pkg/hash"
 )
 
 var (
@@ -22,58 +23,53 @@ var (
 
 	// errInvalidName presents an error when user send candidate with invalid name/surname.
 	errInvalidName = errors.New("input name didn't match to the desired format")
+
+	// errInvalidName presents an error when user try to login with wrong password.
+	errWrongPassword = errors.New("wrong password for inputed user")
+
+	currentUserID = "1"
 )
 
 // AuthRequest presents request for authorization.
 type AuthRequest struct {
-	name     string `json:"name"`
-	password string `json:"password"`
+	Name     string `json:"name"`
+	Password string `json:"password"`
 }
 
 // CandidateSendingRequest presents request for sending candidate.
 type CandidateRequest struct {
-	fileName         string
-	candidateName    string
-	candidateSurname string
-}
-
-// Request presents model of request.
-type Request struct {
-	id          int       `json:"id"`
-	userID      int       `json:"userid"`
-	candidateID int       `json:"candidateid"`
-	status      string    `json:"status"`
-	created     time.Time `json:"created"`
-	updated     time.Time `json:"updated"`
+	FileName         string
+	CandidateName    string
+	CandidateSurname string
 }
 
 // UserRequests type presents structure which contains all user requests.
 type UserRequests struct {
-	requests []Request `json:"requests"`
+	Requests []repository.Request `json:"requests"`
 }
 
 // CandidateResponse type presents candidate sending response.
 type CandidateResponse struct {
-	candidateID int `json:"candidateid"`
+	CandidateID string `json:"candidateid"`
 }
 
 // DownloadResponse type presents a type which contains downloaded candidate cv.
 type DownloadResponse struct {
-	file []byte
+	File []byte
 }
 
 // LogInResponse type presents structure of the log in response.
 type LogInResponse struct {
-	token string `json:"token"`
+	Token string `json:"token"`
 }
 
 // SignUpResponse type presents strcuture of the sign up response.
 type SignUpResponse struct {
-	id int `json:"id"`
+	ID string `json:"id"`
 }
 
 // SignUp registers user.
-func SignUp(rw http.ResponseWriter, r *http.Request) {
+func (s *Server) SignUp(rw http.ResponseWriter, r *http.Request) {
 	var request AuthRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -86,36 +82,56 @@ func SignUp(rw http.ResponseWriter, r *http.Request) {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
-	// TODO: database operations
+	pass, _ := hash.HashPassword(request.Password)
+	id, err := s.Repo.CreateUser(request.Name, pass)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	if err := json.NewEncoder(rw).Encode(SignUpResponse{id: 1}); err != nil {
+	if err := json.NewEncoder(rw).Encode(SignUpResponse{ID: id}); err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
 // LogIn logs in user
-func LogIn(rw http.ResponseWriter, r *http.Request) {
+func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 	var request AuthRequest
 
-	err := json.NewDecoder(r.Body).Decode(&request)
-	if err != nil {
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer r.Body.Close()
 
-	// TODO: validation, database operations etc.
+	fmt.Println(request)
 
-	err = json.NewEncoder(rw).Encode(LogInResponse{token: "something"})
+	user, err := s.Repo.GetUser(request.Name)
+	if errors.Is(err, repository.ErrNoUser) {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
 	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := request.CheckLogInRequest(user); err != nil {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	currentUserID = user.ID
+
+	if err := json.NewEncoder(rw).Encode(LogInResponse{Token: "something"}); err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
 // SendCandidate sends candidate info and his cv.
-func SendCandidate(rw http.ResponseWriter, r *http.Request) {
+func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 	var request CandidateRequest
 
 	file, header, err := r.FormFile("fileName")
@@ -125,62 +141,84 @@ func SendCandidate(rw http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	request.fileName = header.Filename
-	request.candidateName = r.FormValue("candidateName")
-	request.candidateSurname = r.FormValue("candidateSurname")
+	request.FileName = header.Filename
+	request.CandidateName = r.FormValue("candidateName")
+	request.CandidateSurname = r.FormValue("candidateSurname")
 
 	if err := request.CheckCandidateSendingRequest(); err != nil {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
+	// TODO: adding file to object storage
+	var fileID string = "1"
 
-	// TODO: database interaction
-	// TODO: file sending
+	id, err := s.Repo.AddCandidate(request.CandidateName, request.CandidateSurname, fileID)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
-	if err := json.NewEncoder(rw).Encode(CandidateResponse{candidateID: 1}); err != nil {
+	if err := json.NewEncoder(rw).Encode(CandidateResponse{CandidateID: id}); err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
 // GetRequests inputs all user requests.
-func GetRequests(rw http.ResponseWriter, r *http.Request) {
-	// if parameters count == 0
-	// getting requests by user id - database
-	// else if there is parameter type
-	// getting filtered requests by user id - database
-	err := json.NewEncoder(rw).Encode(UserRequests{requests: []Request{}})
-	_ = err
+func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
+	rw.Header().Set("Content-Type", "application/json")
+
+	t := r.URL.Query().Get("type")
+	userRequests, err := s.Repo.GetRequests(currentUserID, t)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err := json.NewEncoder(rw).Encode(UserRequests{Requests: userRequests}); err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 // LoadCV downloads CV of a particular candidate.
-func DownloadCV(rw http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	id := vars["id"]
-	_ = id
-	// check if entered id is valid - database
-	// getting image by id - database
-	// download id from storage - storage
+func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
+	id := r.URL.Query().Get("id")
+	_, err := s.Repo.GetCVID(id)
+	if errors.Is(err, repository.ErrNoFile) {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
+	// TODO: download id from storage - storage
+
+	if err = json.NewEncoder(rw).Encode(DownloadResponse{File: []byte{}}); err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
 }
 
 // CheckCandidateSendingRequest validates data after sending a candidate
 func (r *CandidateRequest) CheckCandidateSendingRequest() error {
-	if len(r.candidateName) == 0 || len(r.candidateSurname) == 0 || len(r.fileName) == 0 {
+	if len(r.CandidateName) == 0 || len(r.CandidateSurname) == 0 || len(r.FileName) == 0 {
 		return errParameterRequired
 	}
 
-	isRightFile, _ := regexp.MatchString("([a-zA-Z0-9\\s_\\.\\-\\(\\):])+(.PDF|.pdf)$", r.fileName)
+	isRightFile, _ := regexp.MatchString("([a-zA-Z0-9\\s_\\.\\-\\(\\):])+(.PDF|.pdf)$", r.FileName)
 	if !isRightFile {
 		return errInvalidFile
 	}
 
-	isValidName, _ := regexp.MatchString("(^[A-Za-zА-Яа-я]{2,16})?([ ]{0,1})([A-Za-zА-Яа-я]{2,16})?", r.candidateName)
+	isValidName, _ := regexp.MatchString("(^[A-Za-zА-Яа-я]{2,16})?([ ]{0,1})([A-Za-zА-Яа-я]{2,16})?", r.CandidateName)
 	if !isValidName {
 		return errInvalidName
 	}
 
-	isValidSurname, _ := regexp.MatchString("(^[A-Za-zА-Яа-я]{2,16})?([ ]{0,1})([A-Za-zА-Яа-я]{2,16})?", r.candidateSurname)
+	isValidSurname, _ := regexp.MatchString("(^[A-Za-zА-Яа-я]{2,16})?([ ]{0,1})([A-Za-zА-Яа-я]{2,16})?", r.CandidateSurname)
 	if !isValidSurname {
 		return errInvalidName
 	}
@@ -190,16 +228,28 @@ func (r *CandidateRequest) CheckCandidateSendingRequest() error {
 
 // CheckSignUpRequest validates data after login/signup
 func (r *AuthRequest) CheckSignUpRequest() error {
-	if r.name == "" || r.password == "" {
+	if r.Name == "" || r.Password == "" {
 		return errParameterRequired
 	}
 
-	if len(r.name) < 6 || len(r.name) > 18 {
+	if len(r.Name) < 6 || len(r.Name) > 18 {
 		return errInvalidLength
 	}
 
-	if len(r.password) < 6 || len(r.password) > 18 {
+	if len(r.Password) < 6 || len(r.Password) > 18 {
 		return errInvalidLength
+	}
+
+	return nil
+}
+
+func (r *AuthRequest) CheckLogInRequest(user repository.User) error {
+	if r.Name == "" || r.Password == "" {
+		return errParameterRequired
+	}
+
+	if !hash.CheckPassowrdHash(r.Password, user.Password) {
+		return errWrongPassword
 	}
 
 	return nil
