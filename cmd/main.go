@@ -6,7 +6,6 @@ import (
 
 	"github.com/cyberdr0id/referral/internal/handler"
 	"github.com/cyberdr0id/referral/internal/repository"
-	"github.com/cyberdr0id/referral/internal/server"
 	"github.com/spf13/viper"
 )
 
@@ -30,11 +29,10 @@ func main() {
 	}
 
 	repo := repository.NewRepository(db)
-	_ = repo
 
-	srv := server.NewServer(viper.GetString("port"), handler.InitRoutes())
+	srv := handler.NewServer(repo)
 
-	if err := srv.Run(); err != nil {
+	if err := srv.Run(viper.GetString("port"), srv); err != nil {
 		log.Fatalf("error while starting server: %s", err.Error())
 	}
 }
