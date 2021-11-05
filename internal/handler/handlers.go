@@ -36,7 +36,7 @@ type AuthRequest struct {
 	Password string `json:"password"`
 }
 
-// CandidateSendingRequest presents request for sending candidate.
+// CandidateRequest presents request for sending candidate.
 type CandidateRequest struct {
 	FileName         string
 	CandidateName    string
@@ -63,7 +63,7 @@ type LogInResponse struct {
 	Token string `json:"token"`
 }
 
-// SignUpResponse type presents strcuture of the sign up response.
+// SignUpResponse type presents structure of the sign up response.
 type SignUpResponse struct {
 	ID string `json:"id"`
 }
@@ -181,7 +181,7 @@ func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// LoadCV downloads CV of a particular candidate.
+// DownloadCV downloads CV of a particular candidate.
 func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 	_, err := s.Repo.GetCVID(id)

@@ -5,7 +5,7 @@ import (
 	"errors"
 )
 
-// GetRequest gives user requests by id.
+// GetRequests gives user requests by id.
 func (r *Repository) GetRequests(id string, t string) ([]Request, error) {
 	var requests []Request
 
