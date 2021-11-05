@@ -1,8 +1,17 @@
 package repository
 
+import (
+	"database/sql"
+	"errors"
+)
+
 // GetRequest gives user requests by id.
 func (r *Repository) GetRequests(id string, t string) ([]Request, error) {
 	var requests []Request
+
+	if t == "" {
+		t = "ID"
+	}
 
 	rows, err := r.db.Query("SELECT ID, USERID, CANDIDATEID, STATUS, CREATED, UPDATED FROM REQUESTS WHERE USERID = $1 ORDER BY $2", id, t)
 	if err != nil {
@@ -41,6 +50,9 @@ func (r *Repository) GetCVID(id string) (string, error) {
 	var fileID string
 
 	err := r.db.QueryRow("SELECT CVOSFILEID FROM CANDIDATES WHERE ID = $1", id).Scan(&fileID)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", ErrNoFile
+	}
 	if err != nil {
 		return "", err
 	}

@@ -1,7 +1,14 @@
 package repository
 
 import (
+	"database/sql"
+	"errors"
 	"fmt"
+)
+
+var (
+	ErrNoUser = errors.New("user doesn't exists")
+	ErrNoFile = errors.New("there is no file with input id")
 )
 
 // CreateUser registers a new user.
@@ -10,6 +17,9 @@ func (r *Repository) CreateUser(name, password string) (string, error) {
 
 	row := r.db.QueryRow("INSERT INTO USERS(NAME, PASSWORD) VALUES($1, $2) RETURNING ID;", name, password)
 	err := row.Scan(&id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", ErrNoUser
+	}
 	if err != nil {
 		return "", err
 	}
