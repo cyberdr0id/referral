@@ -48,11 +48,11 @@ type Request struct {
 
 // Repository type which presents connection between database and app logic.
 type Repository struct {
-	db *sql.DB
+	DB *sql.DB
 	AuthRepository
 	ReferralRepository
 }
 
 func NewRepository(db *sql.DB) *Repository {
-	return &Repository{db: db}
+	return &Repository{DB: db}
 }
