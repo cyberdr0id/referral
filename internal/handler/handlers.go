@@ -113,8 +113,6 @@ func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	fmt.Println(request)
-
 	user, err := s.Repo.GetUser(request.Name)
 	if errors.Is(err, repository.ErrNoUser) {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
@@ -160,7 +158,7 @@ func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 	// TODO: adding file to object storage
-	var fileID string = "1"
+	fileID := "1"
 
 	id, err := s.Repo.AddCandidate(request.CandidateName, request.CandidateSurname, fileID)
 	if err != nil {

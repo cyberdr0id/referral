@@ -47,7 +47,6 @@ func (r *Repository) AddCandidate(name, surname, fileID string) (string, error) 
 }
 
 func (r *Repository) UpdateRequest(id, newState string) error {
-
 	fmt.Printf("UPDATE REQUESTS SET STATUS = %s WHERE ID = %s \n", newState, id)
 
 	rows, err := r.DB.Exec("UPDATE REQUESTS SET STATUS = $1 WHERE ID = $2;", newState, id)
