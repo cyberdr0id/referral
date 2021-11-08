@@ -68,8 +68,14 @@ type SignUpResponse struct {
 	ID string `json:"id"`
 }
 
+type UpdateResponse struct {
+	Message string `json:"message"`
+}
+
 // SignUp registers user.
 func (s *Server) SignUp(rw http.ResponseWriter, r *http.Request) {
+	rw.Header().Set("Content-Type", "application/json")
+
 	var request AuthRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -97,6 +103,8 @@ func (s *Server) SignUp(rw http.ResponseWriter, r *http.Request) {
 
 // LogIn logs in user
 func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
+	rw.Header().Set("Content-Type", "application/json")
+
 	var request AuthRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -132,6 +140,8 @@ func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 
 // SendCandidate sends candidate info and his cv.
 func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
+	rw.Header().Set("Content-Type", "application/json")
+
 	var request CandidateRequest
 
 	file, header, err := r.FormFile("fileName")
@@ -169,6 +179,7 @@ func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Content-Type", "application/json")
 
 	t := r.URL.Query().Get("type")
+
 	userRequests, err := s.Repo.GetRequests(currentUserID, t)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
@@ -183,6 +194,8 @@ func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 
 // DownloadCV downloads CV of a particular candidate.
 func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
+	rw.Header().Set("Content-Type", "application/json")
+
 	id := r.URL.Query().Get("id")
 	_, err := s.Repo.GetCVID(id)
 	if errors.Is(err, repository.ErrNoFile) {
@@ -197,6 +210,26 @@ func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 	// TODO: download id from storage - storage
 
 	if err = json.NewEncoder(rw).Encode(DownloadResponse{File: []byte{}}); err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
+func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
+	rw.Header().Set("Content-Type", "application/json")
+
+	state := r.URL.Query().Get("state")
+	err := s.Repo.UpdateRequest("7", state)
+	if errors.Is(err, repository.ErrNoResult) {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	if err = json.NewEncoder(rw).Encode(UpdateResponse{Message: "request update was successful"}); err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}

@@ -8,5 +8,6 @@ func (s *Server) InitRoutes() {
 
 	s.Router.HandleFunc("/references", s.SendCandidate).Methods("POST") // sending candidate
 	s.Router.HandleFunc("/references", s.GetRequests).Methods("GET")    // user request history
+	s.Router.HandleFunc("/references", s.UpdateRequest).Methods("PUT")  // user request history
 	s.Router.HandleFunc("/cvs", s.DownloadCV).Methods("GET")            // loading cv
 }
