@@ -16,6 +16,7 @@ type ReferralRepository interface {
 	GetRequests(id int) ([]Request, error)
 	AddCandidate(name, surname string, fileID int) (string, error)
 	GetCVID(id int) (string, error)
+	UpdateRequest(id, status string) error
 }
 
 // Candidate presents model of a sent candidate.
@@ -48,11 +49,11 @@ type Request struct {
 
 // Repository type which presents connection between database and app logic.
 type Repository struct {
-	DB *sql.DB
+	db *sql.DB
 	AuthRepository
 	ReferralRepository
 }
 
 func NewRepository(db *sql.DB) *Repository {
-	return &Repository{DB: db}
+	return &Repository{db: db}
 }
