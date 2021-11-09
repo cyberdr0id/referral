@@ -3,7 +3,6 @@ package repository
 import (
 	"database/sql"
 	"errors"
-	"fmt"
 )
 
 // GetRequests gives user requests by id.
@@ -14,8 +13,15 @@ func (r *Repository) GetRequests(id string, t string) ([]Request, error) {
 		t = "ID"
 	}
 
-	rows, err := r.DB.Query("SELECT ID, USERID, CANDIDATEID, STATUS, CREATED, UPDATED FROM REQUESTS WHERE USERID = $1 ORDER BY $2", id, t)
+	query := `SELECT id, userid, candidateid, status, created, updated 
+			  FROM requests WHERE userid = $1 
+			  ORDER BY $2`
+
+	rows, err := r.db.Query(query, id, t)
 	if err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 	defer rows.Close()
@@ -23,7 +29,8 @@ func (r *Repository) GetRequests(id string, t string) ([]Request, error) {
 	for rows.Next() {
 		request := Request{}
 
-		if err := rows.Scan(&request.ID, &request.UserID, &request.CandidateID, &request.Status, &request.Created, &request.Updated); err != nil {
+		if err := rows.Scan(&request.ID, &request.UserID, &request.CandidateID,
+			&request.Status, &request.Created, &request.Updated); err != nil {
 			return nil, err
 		}
 
@@ -38,7 +45,10 @@ func (r *Repository) GetRequests(id string, t string) ([]Request, error) {
 func (r *Repository) AddCandidate(name, surname, fileID string) (string, error) {
 	var requestID string
 
-	row := r.DB.QueryRow("INSERT INTO CANDIDATES(NAME, SURNAME, CVOSFILEID) VALUES($1, $2, $3) RETURNING ID;", name, surname, fileID)
+	query := `INSERT INTO candidates(name, surname, cvosfileid) 
+			  VALUES($1, $2, $3) RETURNING id;`
+
+	row := r.db.QueryRow(query, name, surname, fileID)
 	if err := row.Scan(&requestID); err != nil {
 		return "", err
 	}
@@ -47,9 +57,11 @@ func (r *Repository) AddCandidate(name, surname, fileID string) (string, error) 
 }
 
 func (r *Repository) UpdateRequest(id, newState string) error {
-	fmt.Printf("UPDATE REQUESTS SET STATUS = %s WHERE ID = %s \n", newState, id)
+	query := `UPDATE requests 
+			  SET status = $1
+			  WHERE id = $2;`
 
-	rows, err := r.DB.Exec("UPDATE REQUESTS SET STATUS = $1 WHERE ID = $2;", newState, id)
+	rows, err := r.db.Exec(query, newState, id)
 	if err != nil {
 		return err
 	}
@@ -69,7 +81,11 @@ func (r *Repository) UpdateRequest(id, newState string) error {
 func (r *Repository) GetCVID(id string) (string, error) {
 	var fileID string
 
-	err := r.DB.QueryRow("SELECT CVOSFILEID FROM CANDIDATES WHERE ID = $1", id).Scan(&fileID)
+	query := `SELECT cvosfileid
+			  FROM candidates
+			  WHERE id = $1`
+
+	err := r.db.QueryRow(query, id).Scan(&fileID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", ErrNoFile
 	}

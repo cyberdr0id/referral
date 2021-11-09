@@ -18,7 +18,10 @@ var (
 func (r *Repository) CreateUser(name, password string) (string, error) {
 	var id string
 
-	row := r.DB.QueryRow("INSERT INTO USERS(NAME, PASSWORD) VALUES($1, $2) RETURNING ID;", name, password)
+	query := `INSERT INTO users(name, password)
+			  VALUES($1, $2) RETURNING id;`
+
+	row := r.db.QueryRow(query, name, password)
 	err := row.Scan(&id)
 	if err != nil {
 		return "", err
@@ -31,7 +34,11 @@ func (r *Repository) CreateUser(name, password string) (string, error) {
 func (r *Repository) GetUser(name string) (User, error) {
 	var user User
 
-	row := r.DB.QueryRow("SELECT ID, NAME, PASSWORD, ISADMIN, CREATED, UPDATED FROM USERS WHERE NAME=$1;", name)
+	query := `SELECT id, name, password, isadmin, created, updated 
+			  FROM users 
+			  WHERE name=$1;`
+
+	row := r.db.QueryRow(query, name)
 	err := row.Scan(&user.ID, &user.Name, &user.Password, &user.IsAdmin, &user.Created, &user.Updated)
 	if errors.Is(err, sql.ErrNoRows) {
 		return User{}, ErrNoUser
