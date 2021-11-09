@@ -25,11 +25,11 @@ func NewConnection(config DatabaseConfig) (*sql.DB, error) {
 
 	db, err := sql.Open("postgres", psqlconn)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("cannot create database connection: %w", err)
 	}
 
 	if err = db.Ping(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("database created, but cannot be pinged: %w", err)
 	}
 	return db, nil
 }
