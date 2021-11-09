@@ -3,7 +3,6 @@ package handler
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"net/http"
 	"regexp"
 
@@ -30,14 +29,20 @@ var (
 	currentUserID = "1"
 )
 
-// AuthRequest presents request for authorization.
-type AuthRequest struct {
+// AuthRequest presents request for login.
+type LogInRequest struct {
+	Name     string `json:"name"`
+	Password string `json:"password"`
+}
+
+// AuthRequest presents request for signup.
+type SignUpRequest struct {
 	Name     string `json:"name"`
 	Password string `json:"password"`
 }
 
 // CandidateRequest presents request for sending candidate.
-type CandidateRequest struct {
+type CandidateSendingRequest struct {
 	FileName         string
 	CandidateName    string
 	CandidateSurname string
@@ -49,13 +54,13 @@ type UserRequests struct {
 }
 
 // CandidateResponse type presents candidate sending response.
-type CandidateResponse struct {
+type CandidateSendingResponse struct {
 	CandidateID string `json:"candidateid"`
 }
 
 // DownloadResponse type presents a type which contains downloaded candidate cv.
 type DownloadResponse struct {
-	File []byte
+	FileLink string `json:"filelink"`
 }
 
 // LogInResponse type presents structure of the log in response.
@@ -68,7 +73,8 @@ type SignUpResponse struct {
 	ID string `json:"id"`
 }
 
-type UpdateResponse struct {
+// UpdateResponse type presents message about success of updating.
+type UpdateCandidateResponse struct {
 	Message string `json:"message"`
 }
 
@@ -76,7 +82,7 @@ type UpdateResponse struct {
 func (s *Server) SignUp(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Content-Type", "application/json")
 
-	var request AuthRequest
+	var request SignUpRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
@@ -84,7 +90,7 @@ func (s *Server) SignUp(rw http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if err := request.CheckSignUpRequest(); err != nil {
+	if err := request.ValidateSignUpRequest(); err != nil {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -105,7 +111,7 @@ func (s *Server) SignUp(rw http.ResponseWriter, r *http.Request) {
 func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Content-Type", "application/json")
 
-	var request AuthRequest
+	var request LogInRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
@@ -123,7 +129,7 @@ func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := request.CheckLogInRequest(user); err != nil {
+	if err := request.ValidateLogInRequest(user); err != nil {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -140,7 +146,7 @@ func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Content-Type", "application/json")
 
-	var request CandidateRequest
+	var request CandidateSendingRequest
 
 	file, header, err := r.FormFile("fileName")
 	if err != nil {
@@ -153,7 +159,7 @@ func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 	request.CandidateName = r.FormValue("candidateName")
 	request.CandidateSurname = r.FormValue("candidateSurname")
 
-	if err := request.CheckCandidateSendingRequest(); err != nil {
+	if err := request.ValidateCandidateSendingRequest(); err != nil {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -166,7 +172,7 @@ func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := json.NewEncoder(rw).Encode(CandidateResponse{CandidateID: id}); err != nil {
+	if err := json.NewEncoder(rw).Encode(CandidateSendingResponse{CandidateID: id}); err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -207,12 +213,13 @@ func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 
 	// TODO: download id from storage - storage
 
-	if err = json.NewEncoder(rw).Encode(DownloadResponse{File: []byte{}}); err != nil {
+	if err = json.NewEncoder(rw).Encode(DownloadResponse{FileLink: "example.com/path/to/file.extension"}); err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
+// UpdateRequest updated status of request by id.
 func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Content-Type", "application/json")
 
@@ -227,29 +234,31 @@ func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = json.NewEncoder(rw).Encode(UpdateResponse{Message: "request update was successful"}); err != nil {
+	if err = json.NewEncoder(rw).Encode(UpdateCandidateResponse{Message: "request update was successful"}); err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
 
-// CheckCandidateSendingRequest validates data after sending a candidate
-func (r *CandidateRequest) CheckCandidateSendingRequest() error {
+// ValidateCandidateSendingRequest validates data after sending a candidate.
+func (r *CandidateSendingRequest) ValidateCandidateSendingRequest() error {
 	if len(r.CandidateName) == 0 || len(r.CandidateSurname) == 0 || len(r.FileName) == 0 {
 		return errParameterRequired
 	}
-
-	isRightFile, _ := regexp.MatchString("([a-zA-Z0-9\\s_\\.\\-\\(\\):])+(.PDF|.pdf)$", r.FileName)
+	fileExp := "([a-zA-Z0-9\\s_\\.\\-\\(\\):])+(.PDF|.pdf)$"
+	isRightFile, _ := regexp.MatchString(fileExp, r.FileName)
 	if !isRightFile {
 		return errInvalidFile
 	}
 
-	isValidName, _ := regexp.MatchString("(^[A-Za-zА-Яа-я]{2,16})?([ ]{0,1})([A-Za-zА-Яа-я]{2,16})?", r.CandidateName)
+	nameExp := "(^[A-Za-zА-Яа-я]{2,16})?([ ]{0,1})([A-Za-zА-Яа-я]{2,16})?"
+	isValidName, _ := regexp.MatchString(nameExp, r.CandidateName)
 	if !isValidName {
 		return errInvalidName
 	}
 
-	isValidSurname, _ := regexp.MatchString("(^[A-Za-zА-Яа-я]{2,16})?([ ]{0,1})([A-Za-zА-Яа-я]{2,16})?", r.CandidateSurname)
+	surnameExp := "(^[A-Za-zА-Яа-я]{2,16})?([ ]{0,1})([A-Za-zА-Яа-я]{2,16})?"
+	isValidSurname, _ := regexp.MatchString(surnameExp, r.CandidateSurname)
 	if !isValidSurname {
 		return errInvalidName
 	}
@@ -257,8 +266,8 @@ func (r *CandidateRequest) CheckCandidateSendingRequest() error {
 	return nil
 }
 
-// CheckSignUpRequest validates data after login/signup
-func (r *AuthRequest) CheckSignUpRequest() error {
+// ValidateSignUpRequest validates data after signup.
+func (r *SignUpRequest) ValidateSignUpRequest() error {
 	if r.Name == "" || r.Password == "" {
 		return errParameterRequired
 	}
@@ -274,7 +283,8 @@ func (r *AuthRequest) CheckSignUpRequest() error {
 	return nil
 }
 
-func (r *AuthRequest) CheckLogInRequest(user repository.User) error {
+// ValidateLogInRequest validates data after login.
+func (r *LogInRequest) ValidateLogInRequest(user repository.User) error {
 	if r.Name == "" || r.Password == "" {
 		return errParameterRequired
 	}
