@@ -12,6 +12,8 @@ var (
 	ErrNoFile = errors.New("there is no file with input id")
 	// ErrNoFile presents an error when there are no results for the entered data.
 	ErrNoResult = errors.New("there are no results for the entered data")
+	// ErrNoAccess presents an error when user trying to update non-accessable request.
+	ErrNoAccess = errors.New("no access to this request")
 )
 
 // CreateUser registers a new user.

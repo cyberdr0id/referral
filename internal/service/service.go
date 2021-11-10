@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/cyberdr0id/referral/internal/repository"
@@ -34,7 +35,7 @@ func (s *Service) LogIn(name, password string) (string, error) {
 	}
 
 	if !hash.CheckPassowrdHash(password, user.Password) {
-		return "", fmt.Errorf("wrong password for this user")
+		return "", fmt.Errorf("wrong password for this user") // TODO: is this good practice?
 	}
 
 	//TODO: generate tokens?
@@ -42,13 +43,16 @@ func (s *Service) LogIn(name, password string) (string, error) {
 	return user.ID, nil
 }
 
-func (s *Service) SendCandidate(name, surname, fileID string) (string, error) {
-	id, err := s.repo.AddCandidate(name, surname, fileID)
+func (s *Service) SendCandidate(userID, name, surname, fileID string) (string, error) {
+	candidateID, err := s.repo.AddCandidate(name, surname, fileID)
 	if err != nil {
 		return "", err
 	}
 
-	//TODO: create new request?
+	id, err := s.repo.CreateRequest(userID, candidateID)
+	if err != nil {
+		return "", nil
+	}
 
 	return id, nil
 }
@@ -63,7 +67,7 @@ func (s *Service) GetRequests(userID, filterType string) ([]repository.Request, 
 }
 
 func (s *Service) DownloadCV(id string) (string, error) {
-	id, err := s.repo.GetCVID(id)
+	_, err := s.repo.GetCVID(id)
 	if err != nil {
 		return "", err
 	}
@@ -73,9 +77,21 @@ func (s *Service) DownloadCV(id string) (string, error) {
 	return "example.com/path/to/file.extension", nil
 }
 
-func (s *Service) UpdateRequest(requestId, status string) error {
-	err := s.repo.UpdateRequest(requestId, status)
+func (s *Service) UpdateRequest(userID, requestId, status string) error {
+	isAdmin, err := s.repo.IsUserAdmin(userID)
 	if err != nil {
+		return err
+	}
+
+	err = s.repo.IsUserRequest(userID, requestId)
+	if errors.Is(err, repository.ErrNoAccess) && !isAdmin {
+		return err
+	}
+	if err != nil {
+		return err
+	}
+
+	if err := s.repo.UpdateRequest(requestId, status); err != nil {
 		return err
 	}
 

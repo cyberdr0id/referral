@@ -23,9 +23,12 @@ var (
 	errInvalidName = errors.New("input name didn't match to the desired format")
 
 	// errInvalidName presents an error when user try to login with wrong password.
-	errWrongPassword = errors.New("wrong password for inputed user")
+	errWrongPassword = errors.New("wrong password for this user")
 
-	currentUserID = ""
+	// errInvalidInput presents an error when user trying to send request
+	// 				   with invalid symbols in parameters.
+	errInvalidInput = errors.New("input parameter contains invalid symbols")
+	currentUserID   = ""
 )
 
 // AuthRequest presents request for login.
@@ -45,6 +48,12 @@ type CandidateSendingRequest struct {
 	FileName         string
 	CandidateName    string
 	CandidateSurname string
+}
+
+// UpdatingRequest presents request for updating user request.
+type UpdateCandidateRequest struct {
+	RequestID string
+	Status    string
 }
 
 // UserRequests type presents structure which contains all user requests.
@@ -128,6 +137,10 @@ func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 		http.Error(rw, repository.ErrNoUser.Error(), http.StatusBadRequest)
 		return
 	}
+	if errors.Is(err, errWrongPassword) {
+		http.Error(rw, repository.ErrNoUser.Error(), http.StatusBadRequest)
+		return
+	}
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
@@ -165,7 +178,7 @@ func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 	// TODO: adding file to object storage
 	fileID := "1"
 
-	id, err := s.Service.SendCandidate(request.CandidateName, request.CandidateSurname, fileID)
+	id, err := s.Service.SendCandidate(currentUserID, request.CandidateName, request.CandidateSurname, fileID)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
@@ -221,11 +234,22 @@ func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Content-Type", "application/json")
 
-	status := r.URL.Query().Get("status")
-	requestId := r.URL.Query().Get("id")
+	request := UpdateCandidateRequest{
+		Status:    r.URL.Query().Get("status"),
+		RequestID: r.URL.Query().Get("id"),
+	}
 
-	err := s.Service.UpdateRequest(requestId, status)
+	if err := request.ValidateUpdateCandidateRequest(currentUserID); err != nil {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	err := s.Service.UpdateRequest(currentUserID, request.RequestID, request.Status)
 	if errors.Is(err, repository.ErrNoResult) {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if errors.Is(err, repository.ErrNoAccess) {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -278,6 +302,22 @@ func (r *SignUpRequest) ValidateSignUpRequest() error {
 
 	if len(r.Password) < 6 || len(r.Password) > 18 {
 		return errInvalidLength
+	}
+
+	return nil
+}
+
+func (r *UpdateCandidateRequest) ValidateUpdateCandidateRequest(userID string) error {
+	idExp := "^[1-9]{1,9}$"
+	isValidID, _ := regexp.MatchString(idExp, r.RequestID)
+	if !isValidID {
+		return errInvalidInput
+	}
+
+	statusExp := "^[A-Z][a-z]{8,9}$"
+	isValidStatus, _ := regexp.MatchString(statusExp, r.Status)
+	if isValidStatus {
+		return errInvalidInput
 	}
 
 	return nil

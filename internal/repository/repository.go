@@ -21,37 +21,35 @@ type ReferralRepository interface {
 
 // Candidate presents model of a sent candidate.
 type Candidate struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	Surname    string `json:"surname"`
-	CVOSFileID string `json:"cvosfileid"`
+	ID         string
+	Name       string
+	Surname    string
+	CVOSFileID string
 }
 
 // User presents model of user.
 type User struct {
-	ID       string    `json:"id"`
-	Name     string    `json:"name"`
-	Password string    `json:"password"`
-	IsAdmin  bool      `json:"isadmin"`
-	Created  time.Time `json:"created"`
-	Updated  time.Time `json:"updated"`
+	ID       string
+	Name     string
+	Password string
+	IsAdmin  bool
+	Created  time.Time
+	Updated  time.Time
 }
 
 // Request presents model of request.
 type Request struct {
-	ID          string    `json:"id"`
-	UserID      string    `json:"userid"`
-	CandidateID string    `json:"candidateid"`
-	Status      string    `json:"status"`
-	Created     time.Time `json:"created"`
-	Updated     time.Time `json:"updated"`
+	ID          string
+	UserID      string
+	CandidateID string
+	Status      string
+	Created     time.Time
+	Updated     time.Time
 }
 
 // Repository type which presents connection between database and app logic.
 type Repository struct {
 	db *sql.DB
-	AuthRepository
-	ReferralRepository
 }
 
 func NewRepository(db *sql.DB) *Repository {

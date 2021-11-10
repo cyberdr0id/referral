@@ -48,8 +48,8 @@ func (r *Repository) AddCandidate(name, surname, fileID string) (string, error) 
 	query := `INSERT INTO candidates(name, surname, cvosfileid) 
 			  VALUES($1, $2, $3) RETURNING id;`
 
-	row := r.db.QueryRow(query, name, surname, fileID)
-	if err := row.Scan(&requestID); err != nil {
+	err := r.db.QueryRow(query, name, surname, fileID).Scan(&requestID)
+	if err != nil {
 		return "", err
 	}
 
@@ -94,4 +94,55 @@ func (r *Repository) GetCVID(id string) (string, error) {
 	}
 
 	return fileID, nil
+}
+
+func (r *Repository) CreateRequest(userID, candidateID string) (string, error) {
+	var id string
+
+	query := `INSERT INTO 
+			  	requests(userid, candidateid) 
+			  VALUES($1, $2) RETURNING id;`
+
+	row := r.db.QueryRow(query, userID, candidateID)
+	if err := row.Scan(&id); err != nil {
+		return "", err
+	}
+
+	return id, nil
+}
+
+func (r *Repository) IsUserRequest(userID, requestID string) error {
+	var id string
+
+	query := `SELECT id
+			  FROM requests 
+			  WHERE userid = $1 AND id = $2`
+
+	err := r.db.QueryRow(query, userID, requestID).Scan(&id)
+	if errors.Is(err, sql.ErrNoRows) {
+		return ErrNoAccess
+	}
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (r *Repository) IsUserAdmin(userID string) (bool, error) {
+	var isadmin string
+
+	query := `SELECT isadmin
+			  FROM users 
+			  WHERE id = $1`
+
+	err := r.db.QueryRow(query, userID).Scan(&isadmin)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, ErrNoAccess
+	}
+	if err != nil {
+		return false, err
+	}
+
+	return isadmin == "true", nil
 }
