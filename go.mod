@@ -23,3 +23,9 @@ require (
 	gopkg.in/ini.v1 v1.63.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 )
+
+require (
+	github.com/DATA-DOG/go-sqlmock v1.5.0 // indirect
+	github.com/drewolson/testflight v1.0.0 // indirect
+	github.com/golang/mock v1.6.0
+)
