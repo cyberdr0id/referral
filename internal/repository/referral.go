@@ -40,7 +40,6 @@ func (r *Repository) GetRequests(id string, t string) ([]Request, error) {
 	return requests, nil
 }
 
-// TODO: change return value to Candidate object if only ID is bad and change response in swagger file
 // AddCandidate adds submitted candidate.
 func (r *Repository) AddCandidate(name, surname, fileID string) (string, error) {
 	var requestID string
@@ -96,11 +95,12 @@ func (r *Repository) GetCVID(id string) (string, error) {
 	return fileID, nil
 }
 
+// CreateRequest create and add request with candidate to database.
 func (r *Repository) CreateRequest(userID, candidateID string) (string, error) {
 	var id string
 
 	query := `INSERT INTO 
-			  	requests(userid, candidateid) 
+			  requests(userid, candidateid) 
 			  VALUES($1, $2) RETURNING id;`
 
 	row := r.db.QueryRow(query, userID, candidateID)
@@ -111,6 +111,7 @@ func (r *Repository) CreateRequest(userID, candidateID string) (string, error) {
 	return id, nil
 }
 
+// IsUserRequest checks user request by id when he trying to update request.
 func (r *Repository) IsUserRequest(userID, requestID string) error {
 	var id string
 
@@ -129,6 +130,7 @@ func (r *Repository) IsUserRequest(userID, requestID string) error {
 	return nil
 }
 
+// IsUserAdmin checks if the user an admin.
 func (r *Repository) IsUserAdmin(userID string) (bool, error) {
 	var isadmin string
 
