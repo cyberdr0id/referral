@@ -9,4 +9,4 @@ referenced candidates, filter them by the status and download the CV of a partic
 
 # Database diagram
 
-![Database diagram](diagram.png)
+![Database diagram](docs/diagram.png)

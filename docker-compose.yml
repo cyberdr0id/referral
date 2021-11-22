@@ -9,6 +9,6 @@ services:
       - POSTGRES_PASSWORD=Server1
       - POSTGRES_DB=CV
     volumes:
-      - ./scripts:/docker-entrypoint-initdb.d/
+      - ./scripts/init:/docker-entrypoint-initdb.d/
     ports:
       - 5432:5432

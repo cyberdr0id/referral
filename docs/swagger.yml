@@ -47,10 +47,7 @@ paths:
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                id:
-                  type: integer
+                type: integer
               example:
                 id: 256
         400:
@@ -60,7 +57,7 @@ paths:
         500:
           $ref: "#/components/responses/InternalServerError"
 
-  /cv/send:
+  /referrals:
     post:
       summary: Send CV of a particular candidate
       tags:
@@ -76,13 +73,10 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Candidate"
-        400:
-          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         500:
           $ref: "#/components/responses/InternalServerError"
-  /cv/requests:
     get:
       summary: Return a list with user requests
       tags:
@@ -103,9 +97,9 @@ paths:
           $ref: "#/components/responses/Unauthorized"
         500:
           $ref: "#/components/responses/InternalServerError"
-  /cv/load/{id}:
+  /cvs/{id}:
     get:
-      summary: Load CV of a particular candidate
+      summary: Download CV of a particular candidate
       tags:
         - cv
       security:
@@ -127,39 +121,6 @@ paths:
                 format: binary
               example:
                 file: file.pdf
-        401:
-          $ref: "#/components/responses/Unauthorized"
-        404:
-          $ref: "#/components/responses/NotFound"
-        500:
-          $ref: "#/components/responses/InternalServerError"
-  /cv/filter/{type}:
-    get:
-      summary: Filter CVs
-      tags:
-        - cv
-      security:
-        - referalAuth: []
-      parameters:
-        - name: type
-          in: path
-          description: Should be entered filtered type
-          required: true
-          schema:
-            type: string
-          example:
-            type: name
-      responses:
-        200:
-          description: Getting filtered candidates
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: "#/components/schemas/Candidate"
-        400:
-          $ref: "#/components/responses/BadRequest"
         401:
           $ref: "#/components/responses/Unauthorized"
         404:
