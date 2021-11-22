@@ -10,7 +10,7 @@ func (r *Repository) GetRequests(id string, t string) ([]Request, error) {
 	var requests []Request
 
 	if t == "" {
-		t = "ID"
+		t = "Updated"
 	}
 
 	query := `SELECT id, userid, candidateid, status, created, updated 
