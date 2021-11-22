@@ -10,9 +10,10 @@ import (
 )
 
 type Server struct {
-	HTTPServer *http.Server
-	Router     *mux.Router
-	Service    *service.Service
+	HTTPServer      *http.Server
+	Router          *mux.Router
+	AuthService     service.Auth
+	ReferralService service.Referral
 }
 
 func (s *Server) Run(port string, handler http.Handler) error {
@@ -27,10 +28,11 @@ func (s *Server) Run(port string, handler http.Handler) error {
 	return s.HTTPServer.ListenAndServe()
 }
 
-func NewServer(service *service.Service) *Server {
+func NewServer(authService service.Auth, referralService service.Referral) *Server {
 	s := &Server{
-		Router:  mux.NewRouter(),
-		Service: service,
+		Router:          mux.NewRouter(),
+		AuthService:     authService,
+		ReferralService: referralService,
 	}
 
 	s.InitRoutes()

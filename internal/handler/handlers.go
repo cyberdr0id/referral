@@ -103,7 +103,7 @@ func (s *Server) SignUp(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := s.Service.SignUp(request.Name, request.Password)
+	id, err := s.AuthService.SignUp(request.Name, request.Password)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
@@ -132,7 +132,7 @@ func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := s.Service.LogIn(request.Name, request.Password)
+	id, err := s.AuthService.LogIn(request.Name, request.Password)
 	if errors.Is(err, repository.ErrNoUser) {
 		http.Error(rw, repository.ErrNoUser.Error(), http.StatusBadRequest)
 		return
@@ -178,7 +178,7 @@ func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 	// TODO: adding file to object storage
 	fileID := "1"
 
-	id, err := s.Service.SendCandidate(currentUserID, request.CandidateName, request.CandidateSurname, fileID)
+	id, err := s.ReferralService.SendCandidate(currentUserID, request.CandidateName, request.CandidateSurname, fileID)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
@@ -196,7 +196,7 @@ func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 
 	t := r.URL.Query().Get("type")
 
-	userRequests, err := s.Service.GetRequests(currentUserID, t)
+	userRequests, err := s.ReferralService.GetRequests(currentUserID, t)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
@@ -214,7 +214,7 @@ func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 
 	id := r.URL.Query().Get("id")
 
-	link, err := s.Service.DownloadCV(id)
+	link, err := s.ReferralService.DownloadCV(id)
 	if errors.Is(err, repository.ErrNoFile) {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
@@ -244,7 +244,7 @@ func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := s.Service.UpdateRequest(currentUserID, request.RequestID, request.Status)
+	err := s.ReferralService.UpdateRequest(currentUserID, request.RequestID, request.Status)
 	if errors.Is(err, repository.ErrNoResult) {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
