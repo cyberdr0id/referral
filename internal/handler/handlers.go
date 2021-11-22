@@ -21,7 +21,7 @@ var (
 	errInvalidFile = errors.New("invalid format or name of input file")
 
 	// errInvalidName presents an error when user send candidate with invalid name/surname.
-	errInvalidName = errors.New("input name didn't match to the desired format")
+	errInvalidCandidateData = errors.New("input name didn't match to the desired format")
 
 	// errInvalidName presents an error when user try to login with wrong password.
 	errWrongPassword = errors.New("wrong password for inputed user")
@@ -183,7 +183,16 @@ func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Content-Type", "application/json")
 
 	t := r.URL.Query().Get("type")
-
+	typeExp := "^(id|userid|candidateid|created|updated|status)$"
+	ok, err := regexp.MatchString(typeExp, t)
+	if !ok {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	userRequests, err := s.Repo.GetRequests(currentUserID, t)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
@@ -201,7 +210,19 @@ func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Content-Type", "application/json")
 
 	id := r.URL.Query().Get("id")
-	_, err := s.Repo.GetCVID(id)
+
+	idExp := "^[1-9]\\d*"
+	ok, err := regexp.MatchString(idExp, id)
+	if !ok {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	_, err = s.Repo.GetCVID(id)
 	if errors.Is(err, repository.ErrNoFile) {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
@@ -224,7 +245,32 @@ func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Content-Type", "application/json")
 
 	state := r.URL.Query().Get("state")
-	err := s.Repo.UpdateRequest("7", state)
+
+	stateExp := "^([Aa]ccepted|[Rr]ejected|[Ss]ubmitted)$"
+	ok, err := regexp.MatchString(stateExp, state)
+	if !ok {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	requestId := r.URL.Query().Get("id")
+
+	idExp := "^[1-9]\\d*"
+	ok, err = regexp.MatchString(idExp, requestId)
+	if !ok {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	err = s.Repo.UpdateRequest(requestId, state)
 	if errors.Is(err, repository.ErrNoResult) {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
@@ -251,16 +297,15 @@ func (r *CandidateSendingRequest) ValidateCandidateSendingRequest() error {
 		return errInvalidFile
 	}
 
-	nameExp := "(^[A-Za-zА-Яа-я]{2,16})?([ ]{0,1})([A-Za-zА-Яа-я]{2,16})?"
-	isValidName, _ := regexp.MatchString(nameExp, r.CandidateName)
-	if !isValidName {
-		return errInvalidName
+	nameSurnameExp := "(^[A-Za-zА-Яа-я]{2,16})?([ ]{0,1})([A-Za-zА-Яа-я]{2,16})?"
+	isValid, _ := regexp.MatchString(nameSurnameExp, r.CandidateName)
+	if !isValid {
+		return errInvalidCandidateData
 	}
 
-	surnameExp := "(^[A-Za-zА-Яа-я]{2,16})?([ ]{0,1})([A-Za-zА-Яа-я]{2,16})?"
-	isValidSurname, _ := regexp.MatchString(surnameExp, r.CandidateSurname)
-	if !isValidSurname {
-		return errInvalidName
+	isValid, _ = regexp.MatchString(nameSurnameExp, r.CandidateSurname)
+	if !isValid {
+		return errInvalidCandidateData
 	}
 
 	return nil
