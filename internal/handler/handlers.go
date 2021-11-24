@@ -3,10 +3,12 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"regexp"
 
 	"github.com/cyberdr0id/referral/internal/repository"
+	"github.com/cyberdr0id/referral/internal/service"
 	"github.com/cyberdr0id/referral/pkg/hash"
 )
 
@@ -65,7 +67,8 @@ type DownloadResponse struct {
 
 // LogInResponse type presents structure of the log in response.
 type LogInResponse struct {
-	Token string `json:"token"`
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
 }
 
 // SignUpResponse type presents structure of the sign up response.
@@ -78,10 +81,23 @@ type UpdateCandidateResponse struct {
 	Message string `json:"message"`
 }
 
+func sendResponse(w http.ResponseWriter, resp interface{}, code int) {
+	j, err := json.Marshal(resp)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(code)
+	w.Header().Set("Content-Type", "application/json")
+	_, err = w.Write(j)
+	if err != nil {
+		http.Error(w, fmt.Errorf("can't write HTTP reply: %w", err).Error(), http.StatusInternalServerError)
+	}
+}
+
 // SignUp registers user.
 func (s *Server) SignUp(rw http.ResponseWriter, r *http.Request) {
-	rw.Header().Set("Content-Type", "application/json")
-
 	var request SignUpRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -94,17 +110,15 @@ func (s *Server) SignUp(rw http.ResponseWriter, r *http.Request) {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
+
 	pass, _ := hash.HashPassword(request.Password)
-	id, err := s.Repo.CreateUser(request.Name, pass)
+	id, err := s.Auth.SignUp(request.Name, pass)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err := json.NewEncoder(rw).Encode(SignUpResponse{ID: id}); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	sendResponse(rw, SignUpResponse{ID: id}, http.StatusOK)
 }
 
 // LogIn logs in user
@@ -119,7 +133,17 @@ func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	user, err := s.Repo.GetUser(request.Name)
+	if request.Name == "" {
+		http.Error(rw, service.ErrInvalidParameter+": name", http.StatusBadRequest)
+		return
+	}
+
+	if request.Password == "" {
+		http.Error(rw, service.ErrInvalidParameter+": password", http.StatusBadRequest)
+		return
+	}
+
+	accessToken, refreshToken, err := s.Auth.LogIn(request.Name, request.Password)
 	if errors.Is(err, repository.ErrNoUser) {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
@@ -129,17 +153,7 @@ func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := request.ValidateLogInRequest(user); err != nil {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	currentUserID = user.ID
-
-	if err := json.NewEncoder(rw).Encode(LogInResponse{Token: "something"}); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	sendResponse(rw, LogInResponse{AccessToken: accessToken, RefreshToken: refreshToken}, http.StatusOK)
 }
 
 // SendCandidate sends candidate info and his cv.
@@ -166,7 +180,7 @@ func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 	// TODO: adding file to object storage
 	fileID := "1"
 
-	id, err := s.Repo.AddCandidate(request.CandidateName, request.CandidateSurname, fileID)
+	id, err := s.Referral.AddCandidate(request.CandidateName, request.CandidateSurname, fileID)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
@@ -193,7 +207,7 @@ func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	userRequests, err := s.Repo.GetRequests(currentUserID, t)
+	userRequests, err := s.Referral.GetRequests(currentUserID, t)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
@@ -222,7 +236,7 @@ func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = s.Repo.GetCVID(id)
+	_, err = s.Referral.GetCVID(id)
 	if errors.Is(err, repository.ErrNoFile) {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
@@ -270,7 +284,7 @@ func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.Repo.UpdateRequest(requestId, state)
+	err = s.Referral.UpdateRequest(requestId, state)
 	if errors.Is(err, repository.ErrNoResult) {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
