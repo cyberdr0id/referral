@@ -9,7 +9,6 @@ import (
 
 	"github.com/cyberdr0id/referral/internal/repository"
 	"github.com/cyberdr0id/referral/internal/service"
-	"github.com/cyberdr0id/referral/pkg/hash"
 )
 
 var currentUserID string
@@ -94,12 +93,12 @@ func (s *Server) SignUp(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pass, err := hash.HashPassword(request.Password)
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	id, err := s.Auth.SignUp(request.Name, pass)
+	// pass, err := hash.HashPassword(request.Password)
+	// if err != nil {
+	// 	http.Error(rw, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
+	id, err := s.Auth.SignUp(request.Name, request.Password)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
@@ -120,18 +119,13 @@ func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if request.Name == "" {
-		http.Error(rw, fmt.Errorf("%w: name", service.ErrInvalidParameter).Error(), http.StatusBadRequest)
+	err := request.ValidateLogInRequest()
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
-
-	if request.Password == "" {
-		http.Error(rw, fmt.Errorf("%w: surname", service.ErrInvalidParameter).Error(), http.StatusBadRequest)
-		return
-	}
-
 	accessToken, refreshToken, err := s.Auth.LogIn(request.Name, request.Password)
-	if errors.Is(err, repository.ErrNoUser) {
+	if errors.Is(err, service.ErrNoUser) {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -212,8 +206,7 @@ func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 
 	id := r.URL.Query().Get("id")
 
-	idExp := "^[1-9]\\d*"
-	ok, err := regexp.MatchString(idExp, id)
+	ok, err := ValidateID(id)
 	if !ok {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
@@ -224,7 +217,7 @@ func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	_, err = s.Referral.GetCVID(id)
-	if errors.Is(err, repository.ErrNoFile) {
+	if errors.Is(err, service.ErrNoFile) {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -246,9 +239,7 @@ func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Content-Type", "application/json")
 
 	state := r.URL.Query().Get("state")
-
-	stateExp := "^([Aa]ccepted|[Rr]ejected|[Ss]ubmitted)$"
-	ok, err := regexp.MatchString(stateExp, state)
+	ok, err := ValidateFilterType(state)
 	if !ok {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
@@ -259,9 +250,7 @@ func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	requestId := r.URL.Query().Get("id")
-
-	idExp := "^[1-9]\\d*"
-	ok, err = regexp.MatchString(idExp, requestId)
+	ok, err = ValidateID(requestId)
 	if !ok {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
@@ -272,7 +261,7 @@ func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	err = s.Referral.UpdateRequest(requestId, state)
-	if errors.Is(err, repository.ErrNoResult) {
+	if errors.Is(err, service.ErrNoResult) {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -330,14 +319,40 @@ func (r *SignUpRequest) ValidateSignUpRequest() error {
 }
 
 // ValidateLogInRequest validates data after login.
-func (r *LogInRequest) ValidateLogInRequest(user repository.User) error {
-	if r.Name == "" || r.Password == "" {
-		return fmt.Errorf("%w: one of parameters is empty", service.ErrInvalidParameter)
+func (r *LogInRequest) ValidateLogInRequest() error {
+	if r.Name == "" {
+		return fmt.Errorf("%w: name", service.ErrInvalidParameter)
 	}
 
-	if !hash.CheckPassowrdHash(r.Password, user.Password) {
-		return fmt.Errorf("%w: wrong password", service.ErrInvalidParameter)
+	if r.Password == "" {
+		return fmt.Errorf("%w: password", service.ErrInvalidParameter)
 	}
 
 	return nil
+}
+
+func ValidateFilterType(state string) (bool, error) {
+	stateExp := "^([Aa]ccepted|[Rr]ejected|[Ss]ubmitted)$"
+	ok, err := regexp.MatchString(stateExp, state)
+	if !ok {
+		return ok, fmt.Errorf("%w: id has bad format", service.ErrInvalidParameter)
+	}
+	if err != nil {
+		return ok, err
+	}
+
+	return ok, nil
+}
+
+func ValidateID(id string) (bool, error) {
+	idExp := "^[1-9]\\d*"
+	ok, err := regexp.MatchString(idExp, id)
+	if !ok {
+		return ok, fmt.Errorf("%w: id has bad format", service.ErrInvalidParameter)
+	}
+	if err != nil {
+		return ok, err
+	}
+
+	return ok, nil
 }
