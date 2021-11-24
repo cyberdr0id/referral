@@ -12,24 +12,7 @@ import (
 	"github.com/cyberdr0id/referral/pkg/hash"
 )
 
-var (
-	// errInvalidLength presents an error when user enters data with invalid length.
-	errInvalidLength = errors.New("input parameter has invalid length")
-
-	// errParameterRequired presents an error when user didn't fill some information.
-	errParameterRequired = errors.New("input parameter is required")
-
-	// errInvalidFile presents an error when user load file with invalid name or wrong extension.
-	errInvalidFile = errors.New("invalid format or name of input file")
-
-	// errInvalidName presents an error when user send candidate with invalid name/surname.
-	errInvalidCandidateData = errors.New("input name didn't match to the desired format")
-
-	// errInvalidName presents an error when user try to login with wrong password.
-	errWrongPassword = errors.New("wrong password for inputed user")
-
-	currentUserID = "1"
-)
+var currentUserID string
 
 // AuthRequest presents request for login.
 type LogInRequest struct {
@@ -51,7 +34,7 @@ type CandidateSendingRequest struct {
 }
 
 // UserRequests type presents structure which contains all user requests.
-type UserRequests struct {
+type UserRequestsResponse struct {
 	Requests []repository.Request `json:"requests"`
 }
 
@@ -111,7 +94,11 @@ func (s *Server) SignUp(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pass, _ := hash.HashPassword(request.Password)
+	pass, err := hash.HashPassword(request.Password)
+	if err != nil {
+		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
 	id, err := s.Auth.SignUp(request.Name, pass)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
@@ -134,12 +121,12 @@ func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	if request.Name == "" {
-		http.Error(rw, service.ErrInvalidParameter+": name", http.StatusBadRequest)
+		http.Error(rw, fmt.Errorf("%w: name", service.ErrInvalidParameter).Error(), http.StatusBadRequest)
 		return
 	}
 
 	if request.Password == "" {
-		http.Error(rw, service.ErrInvalidParameter+": password", http.StatusBadRequest)
+		http.Error(rw, fmt.Errorf("%w: surname", service.ErrInvalidParameter).Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -213,7 +200,7 @@ func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := json.NewEncoder(rw).Encode(UserRequests{Requests: userRequests}); err != nil {
+	if err := json.NewEncoder(rw).Encode(UserRequestsResponse{Requests: userRequests}); err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -303,23 +290,23 @@ func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 // ValidateCandidateSendingRequest validates data after sending a candidate.
 func (r *CandidateSendingRequest) ValidateCandidateSendingRequest() error {
 	if len(r.CandidateName) == 0 || len(r.CandidateSurname) == 0 || len(r.FileName) == 0 {
-		return errParameterRequired
+		return fmt.Errorf("%w: wrong length", service.ErrInvalidParameter)
 	}
 	fileExp := "([a-zA-Z0-9\\s_\\.\\-\\(\\):])+(.PDF|.pdf)$"
 	isRightFile, _ := regexp.MatchString(fileExp, r.FileName)
 	if !isRightFile {
-		return errInvalidFile
+		return fmt.Errorf("%w: invalid filename or filetype", service.ErrInvalidParameter)
 	}
 
 	nameSurnameExp := "(^[A-Za-zА-Яа-я]{2,16})?([ ]{0,1})([A-Za-zА-Яа-я]{2,16})?"
 	isValid, _ := regexp.MatchString(nameSurnameExp, r.CandidateName)
 	if !isValid {
-		return errInvalidCandidateData
+		return fmt.Errorf("%w: name has invalid format", service.ErrInvalidParameter)
 	}
 
 	isValid, _ = regexp.MatchString(nameSurnameExp, r.CandidateSurname)
 	if !isValid {
-		return errInvalidCandidateData
+		return fmt.Errorf("%w: surname has invalid format", service.ErrInvalidParameter)
 	}
 
 	return nil
@@ -328,15 +315,15 @@ func (r *CandidateSendingRequest) ValidateCandidateSendingRequest() error {
 // ValidateSignUpRequest validates data after signup.
 func (r *SignUpRequest) ValidateSignUpRequest() error {
 	if r.Name == "" || r.Password == "" {
-		return errParameterRequired
+		return fmt.Errorf("%w: one of parameters is empty", service.ErrInvalidParameter)
 	}
 
 	if len(r.Name) < 6 || len(r.Name) > 18 {
-		return errInvalidLength
+		return fmt.Errorf("%w: wrong length", service.ErrInvalidParameter)
 	}
 
 	if len(r.Password) < 6 || len(r.Password) > 18 {
-		return errInvalidLength
+		return fmt.Errorf("%w: wrong length", service.ErrInvalidParameter)
 	}
 
 	return nil
@@ -345,11 +332,11 @@ func (r *SignUpRequest) ValidateSignUpRequest() error {
 // ValidateLogInRequest validates data after login.
 func (r *LogInRequest) ValidateLogInRequest(user repository.User) error {
 	if r.Name == "" || r.Password == "" {
-		return errParameterRequired
+		return fmt.Errorf("%w: one of parameters is empty", service.ErrInvalidParameter)
 	}
 
 	if !hash.CheckPassowrdHash(r.Password, user.Password) {
-		return errWrongPassword
+		return fmt.Errorf("%w: wrong password", service.ErrInvalidParameter)
 	}
 
 	return nil
