@@ -1,9 +1,13 @@
 package service
 
-import "github.com/cyberdr0id/referral/internal/repository"
+import (
+	"errors"
+
+	"github.com/cyberdr0id/referral/internal/repository"
+)
 
 // ErrInvalidParameter presetns an error when user input invalid parameter.
-var ErrInvalidParameter = "invalid parameter"
+var ErrInvalidParameter = errors.New("invalid parameter")
 
 type Auth interface {
 	LogIn(name, password string) (string, string, error)
