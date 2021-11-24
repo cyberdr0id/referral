@@ -35,12 +35,13 @@ func (m *MockAuth) EXPECT() *MockAuthMockRecorder {
 }
 
 // LogIn mocks base method.
-func (m *MockAuth) LogIn(name, password string) (string, error) {
+func (m *MockAuth) LogIn(name, password string) (string, string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LogIn", name, password)
 	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // LogIn indicates an expected call of LogIn.
@@ -88,7 +89,7 @@ func (m *MockReferral) EXPECT() *MockReferralMockRecorder {
 }
 
 // AddCandidate mocks base method.
-func (m *MockReferral) AddCandidate(name, surname string, fileID int) (string, error) {
+func (m *MockReferral) AddCandidate(name, surname, fileID string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddCandidate", name, surname, fileID)
 	ret0, _ := ret[0].(string)
@@ -103,7 +104,7 @@ func (mr *MockReferralMockRecorder) AddCandidate(name, surname, fileID interface
 }
 
 // GetCVID mocks base method.
-func (m *MockReferral) GetCVID(id int) (string, error) {
+func (m *MockReferral) GetCVID(id string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetCVID", id)
 	ret0, _ := ret[0].(string)
@@ -118,18 +119,18 @@ func (mr *MockReferralMockRecorder) GetCVID(id interface{}) *gomock.Call {
 }
 
 // GetRequests mocks base method.
-func (m *MockReferral) GetRequests(id int) ([]repository.Request, error) {
+func (m *MockReferral) GetRequests(id, t string) ([]repository.Request, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetRequests", id)
+	ret := m.ctrl.Call(m, "GetRequests", id, t)
 	ret0, _ := ret[0].([]repository.Request)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetRequests indicates an expected call of GetRequests.
-func (mr *MockReferralMockRecorder) GetRequests(id interface{}) *gomock.Call {
+func (mr *MockReferralMockRecorder) GetRequests(id, t interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRequests", reflect.TypeOf((*MockReferral)(nil).GetRequests), id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRequests", reflect.TypeOf((*MockReferral)(nil).GetRequests), id, t)
 }
 
 // UpdateRequest mocks base method.
