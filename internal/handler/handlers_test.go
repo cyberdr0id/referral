@@ -8,19 +8,21 @@ import (
 
 	mock_service "github.com/cyberdr0id/referral/internal/service/mock"
 	"github.com/golang/mock/gomock"
-	"github.com/gorilla/mux"
 	"github.com/stretchr/testify/assert"
 )
 
-type Request struct {
-	name     string
-	password string
-}
+// handle 500 error
+// change 400 error to 401
+
+const (
+	name     = "testName"
+	password = "password"
+)
 
 func TestServer_SignUp(t *testing.T) {
 	testTable := []struct {
 		testName             string
-		request              Request
+		request              SignUpRequest
 		requestBody          string
 		expectedStatusCode   int
 		expectedResponseBody string
@@ -28,9 +30,9 @@ func TestServer_SignUp(t *testing.T) {
 	}{
 		{
 			testName: "Success",
-			request: Request{
-				name:     "Nameee",
-				password: "Password",
+			request: SignUpRequest{
+				Name:     "Nameee",
+				Password: "Password",
 			},
 			requestBody:          `{"name":"Nameee","password":"password"}`,
 			expectedStatusCode:   http.StatusOK,
@@ -47,19 +49,14 @@ func TestServer_SignUp(t *testing.T) {
 			defer ctrl.Finish()
 
 			auth := mock_service.NewMockAuth(ctrl)
-			tc.mock(auth, tc.request.name, tc.request.password)
+			tc.mock(auth, tc.request.Name, tc.request.Password)
 
-			s := Server{
-				Auth: auth,
-			}
-
-			r := mux.NewRouter()
-			r.HandleFunc("/auth/signup", s.SignUp).Methods("POST")
+			s := NewServer(auth, nil)
 
 			w := httptest.NewRecorder()
 			req := httptest.NewRequest("POST", "/auth/signup", bytes.NewBufferString(tc.requestBody))
 
-			r.ServeHTTP(w, req)
+			s.Router.ServeHTTP(w, req)
 
 			assert.Equal(t, tc.expectedStatusCode, w.Code)
 			assert.Equal(t, tc.expectedResponseBody, w.Body.String())
@@ -70,7 +67,7 @@ func TestServer_SignUp(t *testing.T) {
 func TestServer_LogIn(t *testing.T) {
 	testTable := []struct {
 		testName             string
-		request              Request
+		request              LogInRequest
 		requestBody          string
 		expectedStatusCode   int
 		expectedResponseBody string
@@ -78,11 +75,11 @@ func TestServer_LogIn(t *testing.T) {
 	}{
 		{
 			testName: "Success",
-			request: Request{
-				name:     "Alexander",
-				password: "password",
+			request: LogInRequest{
+				Name:     name,
+				Password: password,
 			},
-			requestBody:          `{"name":"Alexander","password":"password"}`,
+			requestBody:          `{"name":"testName","password":"password"}`,
 			expectedStatusCode:   http.StatusOK,
 			expectedResponseBody: `{"accessToken":"token","refreshToken":"token"}`,
 			mock: func(s *mock_service.MockAuth, name, password string) {
@@ -91,20 +88,20 @@ func TestServer_LogIn(t *testing.T) {
 		},
 		{
 			testName: "Failure: empty password",
-			request: Request{
-				name:     "Alexander",
-				password: "",
+			request: LogInRequest{
+				Name:     "testName",
+				Password: "",
 			},
-			requestBody:          `{"name":"Alexander","password":""}`,
+			requestBody:          `{"name":"testName","password":""}`,
 			expectedStatusCode:   http.StatusBadRequest,
 			expectedResponseBody: "invalid parameter: password\n",
 			mock:                 func(s *mock_service.MockAuth, name, password string) {},
 		},
 		{
 			testName: "Failure: empty name",
-			request: Request{
-				name:     "",
-				password: "password",
+			request: LogInRequest{
+				Name:     "",
+				Password: "password",
 			},
 			requestBody:          `{"name":"","password":""}`,
 			expectedStatusCode:   http.StatusBadRequest,
@@ -119,19 +116,14 @@ func TestServer_LogIn(t *testing.T) {
 			defer ctrl.Finish()
 
 			auth := mock_service.NewMockAuth(ctrl)
-			tc.mock(auth, tc.request.name, tc.request.password)
+			tc.mock(auth, tc.request.Name, tc.request.Password)
 
-			s := Server{
-				Auth: auth,
-			}
-
-			r := mux.NewRouter()
-			r.HandleFunc("/auth/login", s.LogIn).Methods("POST")
+			s := NewServer(auth, nil)
 
 			w := httptest.NewRecorder()
 			req := httptest.NewRequest("POST", "/auth/login", bytes.NewBufferString(tc.requestBody))
 
-			r.ServeHTTP(w, req)
+			s.Router.ServeHTTP(w, req)
 
 			assert.Equal(t, tc.expectedStatusCode, w.Code)
 			assert.Equal(t, tc.expectedResponseBody, w.Body.String())
