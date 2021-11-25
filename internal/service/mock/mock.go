@@ -34,6 +34,21 @@ func (m *MockAuth) EXPECT() *MockAuthMockRecorder {
 	return m.recorder
 }
 
+// CreateUser mocks base method.
+func (m *MockAuth) CreateUser(name, password string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "CreateUser", name, password)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// CreateUser indicates an expected call of CreateUser.
+func (mr *MockAuthMockRecorder) CreateUser(name, password interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockAuth)(nil).CreateUser), name, password)
+}
+
 // LogIn mocks base method.
 func (m *MockAuth) LogIn(name, password string) (string, string, error) {
 	m.ctrl.T.Helper()
@@ -48,21 +63,6 @@ func (m *MockAuth) LogIn(name, password string) (string, string, error) {
 func (mr *MockAuthMockRecorder) LogIn(name, password interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LogIn", reflect.TypeOf((*MockAuth)(nil).LogIn), name, password)
-}
-
-// SignUp mocks base method.
-func (m *MockAuth) SignUp(name, password string) (string, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "SignUp", name, password)
-	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// SignUp indicates an expected call of SignUp.
-func (mr *MockAuthMockRecorder) SignUp(name, password interface{}) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SignUp", reflect.TypeOf((*MockAuth)(nil).SignUp), name, password)
 }
 
 // MockReferral is a mock of Referral interface.
