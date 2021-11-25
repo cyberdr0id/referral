@@ -16,11 +16,13 @@ var (
 	ErrNoFile = errors.New("there is no file with input id")
 	// ErrNoFile presents an error when there are no results for the entered data.
 	ErrNoResult = errors.New("there are no results for the entered data")
+	// ErrUserAlreadyExists handles an error when user tries to sign up with existing data.
+	ErrUserAlreadyExists = errors.New("user already exists")
 )
 
 type Auth interface {
 	LogIn(name, password string) (string, string, error)
-	SignUp(name, password string) (string, error)
+	CreateUser(name, password string) (string, error)
 }
 
 type Referral interface {

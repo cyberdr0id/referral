@@ -53,9 +53,17 @@ type LogInResponse struct {
 	RefreshToken string `json:"refreshToken"`
 }
 
+func (r LogInResponse) String() string {
+	return fmt.Sprintf("{\"accessToken\":\"%s\",\"refreshToken\":\"%s\"}\n", r.AccessToken, r.RefreshToken)
+}
+
 // SignUpResponse type presents structure of the sign up response.
 type SignUpResponse struct {
 	ID string `json:"id"`
+}
+
+func (r SignUpResponse) String() string {
+	return fmt.Sprintf("{\"id\":\"%s\"}\n", r.ID)
 }
 
 // UpdateResponse type presents message about success of updating.
@@ -64,17 +72,11 @@ type UpdateCandidateResponse struct {
 }
 
 func sendResponse(w http.ResponseWriter, resp interface{}, code int) {
-	j, err := json.Marshal(resp)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-
 	w.WriteHeader(code)
 	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(j)
-	if err != nil {
-		http.Error(w, fmt.Errorf("can't write HTTP reply: %w", err).Error(), http.StatusInternalServerError)
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
 }
 
@@ -98,7 +100,11 @@ func (s *Server) SignUp(rw http.ResponseWriter, r *http.Request) {
 	// 	http.Error(rw, err.Error(), http.StatusInternalServerError)
 	// 	return
 	// }
-	id, err := s.Auth.SignUp(request.Name, request.Password)
+	id, err := s.Auth.CreateUser(request.Name, request.Password)
+	if errors.Is(err, service.ErrUserAlreadyExists) {
+		http.Error(rw, err.Error(), http.StatusConflict)
+		return
+	}
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
@@ -109,24 +115,22 @@ func (s *Server) SignUp(rw http.ResponseWriter, r *http.Request) {
 
 // LogIn logs in user
 func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
-	rw.Header().Set("Content-Type", "application/json")
-
 	var request LogInRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 
 	err := request.ValidateLogInRequest()
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
+		http.Error(rw, err.Error(), http.StatusUnauthorized)
 		return
 	}
 	accessToken, refreshToken, err := s.Auth.LogIn(request.Name, request.Password)
 	if errors.Is(err, service.ErrNoUser) {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
+		http.Error(rw, err.Error(), http.StatusUnauthorized)
 		return
 	}
 	if err != nil {
@@ -303,8 +307,12 @@ func (r *CandidateSendingRequest) ValidateCandidateSendingRequest() error {
 
 // ValidateSignUpRequest validates data after signup.
 func (r *SignUpRequest) ValidateSignUpRequest() error {
-	if r.Name == "" || r.Password == "" {
-		return fmt.Errorf("%w: one of parameters is empty", service.ErrInvalidParameter)
+	if r.Name == "" {
+		return fmt.Errorf("%w: name", service.ErrInvalidParameter)
+	}
+
+	if r.Password == "" {
+		return fmt.Errorf("%w: password", service.ErrInvalidParameter)
 	}
 
 	if len(r.Name) < 6 || len(r.Name) > 18 {
