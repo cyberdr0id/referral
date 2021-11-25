@@ -182,8 +182,7 @@ func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Content-Type", "application/json")
 
 	t := r.URL.Query().Get("type")
-	typeExp := "^(id|userid|candidateid|created|updated|status)$"
-	ok, err := regexp.MatchString(typeExp, t)
+	ok, err := ValidateRequestState(t)
 	if !ok {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
@@ -192,6 +191,7 @@ func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
 	userRequests, err := s.Referral.GetRequests(currentUserID, t)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
@@ -243,7 +243,7 @@ func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Content-Type", "application/json")
 
 	state := r.URL.Query().Get("state")
-	ok, err := ValidateFilterType(state)
+	ok, err := ValidateRequestState(state)
 	if !ok {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
@@ -339,7 +339,7 @@ func (r *LogInRequest) ValidateLogInRequest() error {
 	return nil
 }
 
-func ValidateFilterType(state string) (bool, error) {
+func ValidateRequestState(state string) (bool, error) {
 	stateExp := "^([Aa]ccepted|[Rr]ejected|[Ss]ubmitted)$"
 	ok, err := regexp.MatchString(stateExp, state)
 	if !ok {
