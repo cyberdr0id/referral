@@ -53,23 +53,23 @@ type LogInResponse struct {
 	RefreshToken string `json:"refreshToken"`
 }
 
-func (r LogInResponse) String() string {
-	return fmt.Sprintf("{\"accessToken\":\"%s\",\"refreshToken\":\"%s\"}\n", r.AccessToken, r.RefreshToken)
-}
-
 // SignUpResponse type presents structure of the sign up response.
 type SignUpResponse struct {
 	ID string `json:"id"`
-}
-
-func (r SignUpResponse) String() string {
-	return fmt.Sprintf("{\"id\":\"%s\"}\n", r.ID)
 }
 
 // UpdateResponse type presents message about success of updating.
 type UpdateCandidateResponse struct {
 	Message string `json:"message"`
 }
+
+// ErrorResponse presents a custom error type.
+type ErrorResponse struct {
+	Error error `json:"error"`
+}
+
+// ErrInvalidParameter presetns an error when user input invalid parameter.
+var ErrInvalidParameter = errors.New("invalid parameter")
 
 func sendResponse(w http.ResponseWriter, resp interface{}, code int) {
 	w.WriteHeader(code)
@@ -110,7 +110,7 @@ func (s *Server) SignUp(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sendResponse(rw, SignUpResponse{ID: id}, http.StatusOK)
+	sendResponse(rw, SignUpResponse{ID: id}, http.StatusCreated)
 }
 
 // LogIn logs in user

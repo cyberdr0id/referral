@@ -6,9 +6,6 @@ import (
 	"github.com/cyberdr0id/referral/internal/repository"
 )
 
-// ErrInvalidParameter presetns an error when user input invalid parameter.
-var ErrInvalidParameter = errors.New("invalid parameter")
-
 var (
 	// ErrNoUser handle an error when tyring to get non-database user.
 	ErrNoUser = errors.New("user doesn't exists")
