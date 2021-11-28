@@ -17,28 +17,38 @@ import (
 // TODO: handle 500 error login/signup
 
 const (
-	defaultName     = "testName"
-	defaultPassword = "password"
-	defaultID       = "1"
-
-	emptyParameter = ""
+	defaultName         = "testName"
+	defaultPassword     = "password"
+	defaultID           = "1"
+	longName            = "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnn"
+	longPassword        = "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnn"
+	nonExistentUserName = "abcedefg"
+	shortName           = "n"
+	shortPassword       = "p"
+	emptyParameter      = ""
+	token               = "token"
 )
 
 var (
-	ErrUserAlreadyExists = errors.New("user already exists")
+	userAlreadyExistsMessage      = service.ErrUserAlreadyExists.Error()
+	invalidNameMessage            = ErrInvalidParameter.Error() + ": name"
+	invalidPasswordMessage        = ErrInvalidParameter.Error() + ": password"
+	invalidParameterLengthMessage = ErrInvalidParameter.Error() + ": wrong length"
+
+	errInternalServerError = errors.New("internal server error")
 )
 
 func TestServer_SignUp(t *testing.T) {
 	testTable := []struct {
-		testName           string
-		serviceName        string
-		servicePassword    string
-		requestBody        SignUpRequest
-		expectedStatusCode int
-		expectedResponse   SignUpResponse
-		isErrorExpeced     bool
-		errorResponse      ErrorResponse
-		mock               func(s *mock_service.MockAuth, name, password string)
+		testName              string
+		serviceName           string
+		servicePassword       string
+		requestBody           SignUpRequest
+		expectedStatusCode    int
+		expectedResponse      SignUpResponse
+		isErrorExpeced        bool
+		expectedErrorResponse ErrorResponse
+		mock                  func(s *mock_service.MockAuth, name, password string)
 	}{
 		{
 			testName:        "Success: status 201",
@@ -48,8 +58,10 @@ func TestServer_SignUp(t *testing.T) {
 				Name:     defaultName,
 				Password: defaultPassword,
 			},
-			expectedStatusCode: http.StatusCreated,
-			expectedResponse:   SignUpResponse{ID: defaultID},
+			expectedStatusCode:    http.StatusCreated,
+			expectedResponse:      SignUpResponse{ID: defaultID},
+			isErrorExpeced:        false,
+			expectedErrorResponse: ErrorResponse{},
 			mock: func(s *mock_service.MockAuth, name, password string) {
 				s.EXPECT().CreateUser(name, password).Return(defaultID, nil)
 			},
@@ -64,8 +76,12 @@ func TestServer_SignUp(t *testing.T) {
 			},
 			expectedStatusCode: http.StatusConflict,
 			expectedResponse:   SignUpResponse{},
+			isErrorExpeced:     true,
+			expectedErrorResponse: ErrorResponse{
+				Message: userAlreadyExistsMessage,
+			},
 			mock: func(s *mock_service.MockAuth, name, password string) {
-				s.EXPECT().CreateUser(name, password).Return("", ErrUserAlreadyExists)
+				s.EXPECT().CreateUser(name, password).Return("", service.ErrUserAlreadyExists)
 			},
 		},
 		{
@@ -78,74 +94,108 @@ func TestServer_SignUp(t *testing.T) {
 			},
 			expectedStatusCode: http.StatusBadRequest,
 			expectedResponse:   SignUpResponse{},
-			mock:               func(s *mock_service.MockAuth, name, password string) {},
+			isErrorExpeced:     true,
+			expectedErrorResponse: ErrorResponse{
+				Message: invalidPasswordMessage,
+			},
+			mock: func(s *mock_service.MockAuth, name, password string) {},
 		},
 		{
-			testName: "Failure: empty name, status 400",
-			request: SignUpRequest{
+			testName:        "Failure: empty name, status 400",
+			serviceName:     emptyParameter,
+			servicePassword: defaultPassword,
+			requestBody: SignUpRequest{
+				Name:     emptyParameter,
+				Password: defaultPassword,
+			},
+			expectedStatusCode: http.StatusBadRequest,
+			expectedResponse:   SignUpResponse{},
+			isErrorExpeced:     true,
+			expectedErrorResponse: ErrorResponse{
+				Message: invalidNameMessage,
+			},
+			mock: func(s *mock_service.MockAuth, name, password string) {},
+		},
+		{
+			testName:        "Failure: wrong name length(too long), status 400",
+			serviceName:     longName,
+			servicePassword: defaultPassword,
+			requestBody: SignUpRequest{
+				Name:     longName,
+				Password: defaultPassword,
+			},
+			expectedStatusCode: http.StatusBadRequest,
+			expectedResponse:   SignUpResponse{},
+			isErrorExpeced:     true,
+			expectedErrorResponse: ErrorResponse{
+				Message: invalidParameterLengthMessage,
+			},
+			mock: func(s *mock_service.MockAuth, name, password string) {},
+		},
+		{
+			testName:        "Failure: wrong password length(too long), status 400",
+			serviceName:     defaultName,
+			servicePassword: longPassword,
+			requestBody: SignUpRequest{
 				Name:     defaultName,
-				Password: emptyParameter,
+				Password: longPassword,
 			},
-			requestBody:        `{"name":"","password":"password"}`,
 			expectedStatusCode: http.StatusBadRequest,
-			expectedResponse:   service.ErrInvalidParameter.Error() + ": name\n",
-			mock:               func(s *mock_service.MockAuth, name, password string) {},
+			expectedResponse:   SignUpResponse{},
+			isErrorExpeced:     true,
+			expectedErrorResponse: ErrorResponse{
+				Message: invalidParameterLengthMessage,
+			},
+			mock: func(s *mock_service.MockAuth, name, password string) {},
 		},
 		{
-			testName: "Failure: wrong name length(too long), status 400",
-			request: SignUpRequest{
-				Name:     name + "qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq",
-				Password: password,
+			testName:        "Failure: wrong name length(too small), status 400",
+			serviceName:     shortName,
+			servicePassword: defaultPassword,
+			requestBody: SignUpRequest{
+				Name:     shortName,
+				Password: defaultPassword,
 			},
-			requestBody:        `{"name":"nameqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq","password":"password"}`,
 			expectedStatusCode: http.StatusBadRequest,
-			expectedResponse:   service.ErrInvalidParameter.Error() + ": wrong length\n",
-			mock:               func(s *mock_service.MockAuth, name, password string) {},
+			expectedResponse:   SignUpResponse{},
+			isErrorExpeced:     true,
+			expectedErrorResponse: ErrorResponse{
+				Message: invalidParameterLengthMessage,
+			},
+			mock: func(s *mock_service.MockAuth, name, password string) {},
 		},
 		{
-			testName: "Failure: wrong password length(too long), status 400",
-			request: SignUpRequest{
-				Name:     name,
-				Password: password + "qqqqqqqqqqqqqqqqqqqqqqqqqqq",
+			testName:        "Failure: wrong password length(too small), status 400",
+			serviceName:     defaultName,
+			servicePassword: shortPassword,
+			requestBody: SignUpRequest{
+				Name:     defaultName,
+				Password: shortPassword,
 			},
-			requestBody:        `{"name":"name","password":"passwordqqqqqqqqqqqqqqqqqqqqqqqqqqq"}`,
 			expectedStatusCode: http.StatusBadRequest,
-			expectedResponse:   service.ErrInvalidParameter.Error() + ": wrong length\n",
-			mock:               func(s *mock_service.MockAuth, name, password string) {},
+			expectedResponse:   SignUpResponse{},
+			isErrorExpeced:     true,
+			expectedErrorResponse: ErrorResponse{
+				Message: invalidParameterLengthMessage,
+			},
+			mock: func(s *mock_service.MockAuth, name, password string) {},
 		},
 		{
-			testName: "Failure: wrong name length(too small), status 400",
-			request: SignUpRequest{
-				Name:     "n",
-				Password: password,
+			testName:        "Failure: internal server error, status 500",
+			serviceName:     defaultName,
+			servicePassword: defaultPassword,
+			requestBody: SignUpRequest{
+				Name:     defaultName,
+				Password: defaultPassword,
 			},
-			requestBody:        `{"name":"n","password":"password"}`,
-			expectedStatusCode: http.StatusBadRequest,
-			expectedResponse:   service.ErrInvalidParameter.Error() + ": wrong length\n",
-			mock:               func(s *mock_service.MockAuth, name, password string) {},
-		},
-		{
-			testName: "Failure: wrong password length(too small), status 400",
-			request: SignUpRequest{
-				Name:     name,
-				Password: "p",
-			},
-			requestBody:        `{"name":"name","password":"p"}`,
-			expectedStatusCode: http.StatusBadRequest,
-			expectedResponse:   service.ErrInvalidParameter.Error() + ": wrong length\n",
-			mock:               func(s *mock_service.MockAuth, name, password string) {},
-		},
-		{
-			testName: "Failure: internal server error, status 500",
-			request: SignUpRequest{
-				Name:     name,
-				Password: password,
-			},
-			requestBody:        `{"name":"testName","password":"password"}`,
 			expectedStatusCode: http.StatusInternalServerError,
-			expectedResponse:   errors.New("internal server error").Error() + "\n",
+			expectedResponse:   SignUpResponse{},
+			isErrorExpeced:     true,
+			expectedErrorResponse: ErrorResponse{
+				Message: errInternalServerError.Error(),
+			},
 			mock: func(s *mock_service.MockAuth, name, password string) {
-				s.EXPECT().CreateUser(name, password).Return("1", errors.New("internal server error"))
+				s.EXPECT().CreateUser(name, password).Return("", errInternalServerError)
 			},
 		},
 	}
@@ -167,104 +217,154 @@ func TestServer_SignUp(t *testing.T) {
 
 			s.Router.ServeHTTP(w, req)
 
-			var response SignUpResponse
-			_ = json.Unmarshal(w.Body.Bytes(), &response)
+			if tc.isErrorExpeced {
+				var response ErrorResponse
+				_ = json.Unmarshal(w.Body.Bytes(), &response)
 
-			assert.Equal(t, tc.expectedStatusCode, w.Code)
-			assert.Equal(t, tc.expectedResponse, response)
+				assert.Equal(t, tc.expectedStatusCode, w.Code)
+				assert.Equal(t, tc.expectedErrorResponse, response)
+			} else {
+				var response SignUpResponse
+				_ = json.Unmarshal(w.Body.Bytes(), &response)
+
+				assert.Equal(t, tc.expectedStatusCode, w.Code)
+				assert.Equal(t, tc.expectedResponse, response)
+			}
 		})
 	}
 }
 
-// func TestServer_LogIn(t *testing.T) {
-// 	testTable := []struct {
-// 		testName           string
-// 		request            LogInRequest
-// 		requestBody        string
-// 		expectedStatusCode int
-// 		expectedResponse   interface{}
-// 		mock               func(s *mock_service.MockAuth, name, password string)
-// 	}{
-// 		{
-// 			testName: "Success: status 200",
-// 			request: LogInRequest{
-// 				Name:     name,
-// 				Password: password,
-// 			},
-// 			requestBody:        `{"name":"testName","password":"password"}`,
-// 			expectedStatusCode: http.StatusOK,
-// 			expectedResponse:   LogInResponse{AccessToken: "token", RefreshToken: "token"}.String(),
-// 			mock: func(s *mock_service.MockAuth, name, password string) {
-// 				s.EXPECT().LogIn(name, password).Return("token", "token", nil)
-// 			},
-// 		},
-// 		{
-// 			testName: "Failure: empty password, status 401",
-// 			request: LogInRequest{
-// 				Name:     name,
-// 				Password: emptyParameter,
-// 			},
-// 			requestBody:        `{"name":"testName","password":""}`,
-// 			expectedStatusCode: http.StatusUnauthorized,
-// 			expectedResponse:   service.ErrInvalidParameter.Error() + ": password\n",
-// 			mock:               func(s *mock_service.MockAuth, name, password string) {},
-// 		},
-// 		{
-// 			testName: "Failure: empty name, status 401",
-// 			request: LogInRequest{
-// 				Name:     "",
-// 				Password: password,
-// 			},
-// 			requestBody:        `{"name":"","password":"password"}`,
-// 			expectedStatusCode: http.StatusUnauthorized,
-// 			expectedResponse:   service.ErrInvalidParameter.Error() + ": name\n",
-// 			mock:               func(s *mock_service.MockAuth, name, password string) {},
-// 		},
-// 		{
-// 			testName: "Failure: user doesn't exists, status 401",
-// 			request: LogInRequest{
-// 				Name:     name + "aaaaaaaaa",
-// 				Password: password,
-// 			},
-// 			requestBody:        `{"name":"testNameaaaaaaaaa","password":"password"}`,
-// 			expectedStatusCode: http.StatusUnauthorized,
-// 			expectedResponse:   service.ErrNoUser.Error() + "\n",
-// 			mock: func(s *mock_service.MockAuth, name, password string) {
-// 				s.EXPECT().LogIn(name, password).Return("", "", service.ErrNoUser)
-// 			},
-// 		},
-// 		{
-// 			testName: "Failure: internal server error, status 500",
-// 			request: LogInRequest{
-// 				Name:     name,
-// 				Password: password,
-// 			},
-// 			requestBody:        `{"name":"testName","password":"password"}`,
-// 			expectedStatusCode: http.StatusInternalServerError,
-// 			expectedResponse:   errors.New("internal server error").Error() + "\n",
-// 			mock: func(s *mock_service.MockAuth, name, password string) {
-// 				s.EXPECT().LogIn(name, password).Return("token", "token", errors.New("internal server error"))
-// 			},
-// 		},
-// 	}
+func TestServer_LogIn(t *testing.T) {
+	testTable := []struct {
+		testName              string
+		serviceName           string
+		servicePassword       string
+		requestBody           LogInRequest
+		expectedStatusCode    int
+		expectedResponse      LogInResponse
+		isErrorExpeced        bool
+		expectedErrorResponse ErrorResponse
+		mock                  func(s *mock_service.MockAuth, name, password string)
+	}{
+		{
+			testName:        "Success: status 200",
+			serviceName:     defaultName,
+			servicePassword: defaultPassword,
+			requestBody: LogInRequest{
+				Name:     defaultName,
+				Password: defaultPassword,
+			},
+			expectedStatusCode: http.StatusOK,
+			expectedResponse: LogInResponse{
+				AccessToken:  token,
+				RefreshToken: token,
+			},
+			isErrorExpeced:        false,
+			expectedErrorResponse: ErrorResponse{},
+			mock: func(s *mock_service.MockAuth, name, password string) {
+				s.EXPECT().LogIn(name, password).Return(token, token, nil)
+			},
+		},
+		{
+			testName:        "Failure: empty password, status 401",
+			serviceName:     defaultName,
+			servicePassword: emptyParameter,
+			requestBody: LogInRequest{
+				Name:     defaultName,
+				Password: emptyParameter,
+			},
+			expectedStatusCode: http.StatusUnauthorized,
+			expectedResponse:   LogInResponse{},
+			isErrorExpeced:     true,
+			expectedErrorResponse: ErrorResponse{
+				Message: invalidPasswordMessage,
+			},
+			mock: func(s *mock_service.MockAuth, name, password string) {},
+		},
+		{
+			testName:        "Failure: empty name, status 401",
+			serviceName:     emptyParameter,
+			servicePassword: defaultPassword,
+			requestBody: LogInRequest{
+				Name:     emptyParameter,
+				Password: defaultPassword,
+			},
+			expectedStatusCode: http.StatusUnauthorized,
+			expectedResponse:   LogInResponse{},
+			isErrorExpeced:     true,
+			expectedErrorResponse: ErrorResponse{
+				Message: invalidNameMessage,
+			},
+			mock: func(s *mock_service.MockAuth, name, password string) {},
+		},
+		{
+			testName:        "Failure: user doesn't exists, status 401",
+			serviceName:     nonExistentUserName,
+			servicePassword: defaultPassword,
+			requestBody: LogInRequest{
+				Name:     nonExistentUserName,
+				Password: defaultPassword,
+			},
+			expectedStatusCode: http.StatusUnauthorized,
+			expectedResponse:   LogInResponse{},
+			isErrorExpeced:     true,
+			expectedErrorResponse: ErrorResponse{
+				Message: service.ErrNoUser.Error(),
+			},
+			mock: func(s *mock_service.MockAuth, name, password string) {
+				s.EXPECT().LogIn(name, password).Return(emptyParameter, emptyParameter, service.ErrNoUser)
+			},
+		},
+		{
+			testName:        "Failure: internal server error, status 500",
+			serviceName:     defaultName,
+			servicePassword: defaultPassword,
+			requestBody: LogInRequest{
+				Name:     defaultName,
+				Password: defaultPassword,
+			},
+			expectedStatusCode: http.StatusInternalServerError,
+			expectedResponse:   LogInResponse{},
+			isErrorExpeced:     true,
+			expectedErrorResponse: ErrorResponse{
+				Message: errInternalServerError.Error(),
+			},
+			mock: func(s *mock_service.MockAuth, name, password string) {
+				s.EXPECT().LogIn(name, password).Return(token, token, errInternalServerError)
+			},
+		},
+	}
 
-// 	for _, tc := range testTable {
-// 		t.Run(tc.testName, func(t *testing.T) {
-// 			ctrl := gomock.NewController(t)
-// 			defer ctrl.Finish()
+	for _, tc := range testTable {
+		t.Run(tc.testName, func(t *testing.T) {
+			ctrl := gomock.NewController(t)
+			defer ctrl.Finish()
 
-// 			auth := mock_service.NewMockAuth(ctrl)
-// 			tc.mock(auth, tc.request.Name, tc.request.Password)
+			auth := mock_service.NewMockAuth(ctrl)
+			tc.mock(auth, tc.serviceName, tc.servicePassword)
 
-// 			s := NewServer(auth, nil)
+			s := NewServer(auth, nil)
 
-// 			w := httptest.NewRecorder()
-// 			req := httptest.NewRequest("POST", "/auth/login", bytes.NewBufferString(tc.requestBody))
+			w := httptest.NewRecorder()
 
-// 			s.Router.ServeHTTP(w, req)
+			request, _ := json.Marshal(tc.requestBody)
+			req := httptest.NewRequest("POST", "/auth/login", bytes.NewBuffer(request))
 
-// 			assert.Equal(t, tc.expectedStatusCode, w.Code)
-// 			assert.Equal(t, tc.expectedResponse, w.Body.String())
-// 		})
-// 	}
-// }
+			s.Router.ServeHTTP(w, req)
+
+			if tc.isErrorExpeced {
+				var response ErrorResponse
+				_ = json.Unmarshal(w.Body.Bytes(), &response)
+
+				assert.Equal(t, tc.expectedStatusCode, w.Code)
+				assert.Equal(t, tc.expectedErrorResponse, response)
+			} else {
+				var response LogInResponse
+				_ = json.Unmarshal(w.Body.Bytes(), &response)
+
+				assert.Equal(t, tc.expectedStatusCode, w.Code)
+				assert.Equal(t, tc.expectedResponse, response)
+			}
+		})
+	}
+}

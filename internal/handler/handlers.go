@@ -65,7 +65,7 @@ type UpdateCandidateResponse struct {
 
 // ErrorResponse presents a custom error type.
 type ErrorResponse struct {
-	Error error `json:"error"`
+	Message string `json:"error"`
 }
 
 // ErrInvalidParameter presetns an error when user input invalid parameter.
@@ -85,13 +85,13 @@ func (s *Server) SignUp(rw http.ResponseWriter, r *http.Request) {
 	var request SignUpRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 
 	if err := request.ValidateSignUpRequest(); err != nil {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
 
@@ -102,11 +102,11 @@ func (s *Server) SignUp(rw http.ResponseWriter, r *http.Request) {
 	// }
 	id, err := s.Auth.CreateUser(request.Name, request.Password)
 	if errors.Is(err, service.ErrUserAlreadyExists) {
-		http.Error(rw, err.Error(), http.StatusConflict)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusConflict)
 		return
 	}
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
 		return
 	}
 
@@ -118,23 +118,23 @@ func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 	var request LogInRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 
 	err := request.ValidateLogInRequest()
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusUnauthorized)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusUnauthorized)
 		return
 	}
 	accessToken, refreshToken, err := s.Auth.LogIn(request.Name, request.Password)
 	if errors.Is(err, service.ErrNoUser) {
-		http.Error(rw, err.Error(), http.StatusUnauthorized)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusUnauthorized)
 		return
 	}
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
 		return
 	}
 
@@ -283,23 +283,23 @@ func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 // ValidateCandidateSendingRequest validates data after sending a candidate.
 func (r *CandidateSendingRequest) ValidateCandidateSendingRequest() error {
 	if len(r.CandidateName) == 0 || len(r.CandidateSurname) == 0 || len(r.FileName) == 0 {
-		return fmt.Errorf("%w: wrong length", service.ErrInvalidParameter)
+		return fmt.Errorf("%w: wrong length", ErrInvalidParameter)
 	}
 	fileExp := "([a-zA-Z0-9\\s_\\.\\-\\(\\):])+(.PDF|.pdf)$"
 	isRightFile, _ := regexp.MatchString(fileExp, r.FileName)
 	if !isRightFile {
-		return fmt.Errorf("%w: invalid filename or filetype", service.ErrInvalidParameter)
+		return fmt.Errorf("%w: invalid filename or filetype", ErrInvalidParameter)
 	}
 
 	nameSurnameExp := "(^[A-Za-zА-Яа-я]{2,16})?([ ]{0,1})([A-Za-zА-Яа-я]{2,16})?"
 	isValid, _ := regexp.MatchString(nameSurnameExp, r.CandidateName)
 	if !isValid {
-		return fmt.Errorf("%w: name has invalid format", service.ErrInvalidParameter)
+		return fmt.Errorf("%w: name has invalid format", ErrInvalidParameter)
 	}
 
 	isValid, _ = regexp.MatchString(nameSurnameExp, r.CandidateSurname)
 	if !isValid {
-		return fmt.Errorf("%w: surname has invalid format", service.ErrInvalidParameter)
+		return fmt.Errorf("%w: surname has invalid format", ErrInvalidParameter)
 	}
 
 	return nil
@@ -308,19 +308,19 @@ func (r *CandidateSendingRequest) ValidateCandidateSendingRequest() error {
 // ValidateSignUpRequest validates data after signup.
 func (r *SignUpRequest) ValidateSignUpRequest() error {
 	if r.Name == "" {
-		return fmt.Errorf("%w: name", service.ErrInvalidParameter)
+		return fmt.Errorf("%w: name", ErrInvalidParameter)
 	}
 
 	if r.Password == "" {
-		return fmt.Errorf("%w: password", service.ErrInvalidParameter)
+		return fmt.Errorf("%w: password", ErrInvalidParameter)
 	}
 
 	if len(r.Name) < 6 || len(r.Name) > 18 {
-		return fmt.Errorf("%w: wrong length", service.ErrInvalidParameter)
+		return fmt.Errorf("%w: wrong length", ErrInvalidParameter)
 	}
 
 	if len(r.Password) < 6 || len(r.Password) > 18 {
-		return fmt.Errorf("%w: wrong length", service.ErrInvalidParameter)
+		return fmt.Errorf("%w: wrong length", ErrInvalidParameter)
 	}
 
 	return nil
@@ -329,11 +329,11 @@ func (r *SignUpRequest) ValidateSignUpRequest() error {
 // ValidateLogInRequest validates data after login.
 func (r *LogInRequest) ValidateLogInRequest() error {
 	if r.Name == "" {
-		return fmt.Errorf("%w: name", service.ErrInvalidParameter)
+		return fmt.Errorf("%w: name", ErrInvalidParameter)
 	}
 
 	if r.Password == "" {
-		return fmt.Errorf("%w: password", service.ErrInvalidParameter)
+		return fmt.Errorf("%w: password", ErrInvalidParameter)
 	}
 
 	return nil
@@ -343,7 +343,7 @@ func ValidateRequestState(state string) (bool, error) {
 	stateExp := "^([Aa]ccepted|[Rr]ejected|[Ss]ubmitted)$"
 	ok, err := regexp.MatchString(stateExp, state)
 	if !ok {
-		return ok, fmt.Errorf("%w: id has bad format", service.ErrInvalidParameter)
+		return ok, fmt.Errorf("%w: id has bad format", ErrInvalidParameter)
 	}
 	if err != nil {
 		return ok, err
@@ -356,7 +356,7 @@ func ValidateID(id string) (bool, error) {
 	idExp := "^[1-9]\\d*"
 	ok, err := regexp.MatchString(idExp, id)
 	if !ok {
-		return ok, fmt.Errorf("%w: id has bad format", service.ErrInvalidParameter)
+		return ok, fmt.Errorf("%w: id has bad format", ErrInvalidParameter)
 	}
 	if err != nil {
 		return ok, err
