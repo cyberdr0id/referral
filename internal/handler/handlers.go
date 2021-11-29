@@ -3,31 +3,15 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"regexp"
 
 	"github.com/cyberdr0id/referral/internal/repository"
-	"github.com/cyberdr0id/referral/pkg/hash"
+	"github.com/cyberdr0id/referral/internal/service"
 )
 
-var (
-	// errInvalidLength presents an error when user enters data with invalid length.
-	errInvalidLength = errors.New("input parameter has invalid length")
-
-	// errParameterRequired presents an error when user didn't fill some information.
-	errParameterRequired = errors.New("input parameter is required")
-
-	// errInvalidFile presents an error when user load file with invalid name or wrong extension.
-	errInvalidFile = errors.New("invalid format or name of input file")
-
-	// errInvalidName presents an error when user send candidate with invalid name/surname.
-	errInvalidCandidateData = errors.New("input name didn't match to the desired format")
-
-	// errInvalidName presents an error when user try to login with wrong password.
-	errWrongPassword = errors.New("wrong password for inputed user")
-
-	currentUserID = "1"
-)
+var currentUserID string
 
 // AuthRequest presents request for login.
 type LogInRequest struct {
@@ -49,7 +33,7 @@ type CandidateSendingRequest struct {
 }
 
 // UserRequests type presents structure which contains all user requests.
-type UserRequests struct {
+type UserRequestsResponse struct {
 	Requests []repository.Request `json:"requests"`
 }
 
@@ -65,7 +49,8 @@ type DownloadResponse struct {
 
 // LogInResponse type presents structure of the log in response.
 type LogInResponse struct {
-	Token string `json:"token"`
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
 }
 
 // SignUpResponse type presents structure of the sign up response.
@@ -78,68 +63,82 @@ type UpdateCandidateResponse struct {
 	Message string `json:"message"`
 }
 
+// ErrorResponse presents a custom error type.
+type ErrorResponse struct {
+	Message string `json:"error"`
+}
+
+// ErrInvalidParameter presetns an error when user input invalid parameter.
+var ErrInvalidParameter = errors.New("invalid parameter")
+
+func sendResponse(w http.ResponseWriter, resp interface{}, code int) {
+	w.WriteHeader(code)
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+}
+
 // SignUp registers user.
 func (s *Server) SignUp(rw http.ResponseWriter, r *http.Request) {
-	rw.Header().Set("Content-Type", "application/json")
-
 	var request SignUpRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 
 	if err := request.ValidateSignUpRequest(); err != nil {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
-		return
-	}
-	pass, _ := hash.HashPassword(request.Password)
-	id, err := s.Repo.CreateUser(request.Name, pass)
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
 
-	if err := json.NewEncoder(rw).Encode(SignUpResponse{ID: id}); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+	// pass, err := hash.HashPassword(request.Password)
+	// if err != nil {
+	// 	http.Error(rw, err.Error(), http.StatusInternalServerError)
+	// 	return
+	// }
+	id, err := s.Auth.CreateUser(request.Name, request.Password)
+	if errors.Is(err, service.ErrUserAlreadyExists) {
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusConflict)
 		return
 	}
+	if err != nil {
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
+		return
+	}
+
+	sendResponse(rw, SignUpResponse{ID: id}, http.StatusCreated)
 }
 
 // LogIn logs in user
 func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
-	rw.Header().Set("Content-Type", "application/json")
-
 	var request LogInRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
 	defer r.Body.Close()
 
-	user, err := s.Repo.GetUser(request.Name)
-	if errors.Is(err, repository.ErrNoUser) {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
+	err := request.ValidateLogInRequest()
+	if err != nil {
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusUnauthorized)
+		return
+	}
+	accessToken, refreshToken, err := s.Auth.LogIn(request.Name, request.Password)
+	if errors.Is(err, service.ErrNoUser) {
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusUnauthorized)
 		return
 	}
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
 		return
 	}
 
-	if err := request.ValidateLogInRequest(user); err != nil {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	currentUserID = user.ID
-
-	if err := json.NewEncoder(rw).Encode(LogInResponse{Token: "something"}); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	sendResponse(rw, LogInResponse{AccessToken: accessToken, RefreshToken: refreshToken}, http.StatusOK)
 }
 
 // SendCandidate sends candidate info and his cv.
@@ -166,7 +165,7 @@ func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 	// TODO: adding file to object storage
 	fileID := "1"
 
-	id, err := s.Repo.AddCandidate(request.CandidateName, request.CandidateSurname, fileID)
+	id, err := s.Referral.AddCandidate(request.CandidateName, request.CandidateSurname, fileID)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
@@ -183,8 +182,7 @@ func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Content-Type", "application/json")
 
 	t := r.URL.Query().Get("type")
-	typeExp := "^(id|userid|candidateid|created|updated|status)$"
-	ok, err := regexp.MatchString(typeExp, t)
+	ok, err := ValidateRequestState(t)
 	if !ok {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
@@ -193,13 +191,14 @@ func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	userRequests, err := s.Repo.GetRequests(currentUserID, t)
+
+	userRequests, err := s.Referral.GetRequests(currentUserID, t)
 	if err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err := json.NewEncoder(rw).Encode(UserRequests{Requests: userRequests}); err != nil {
+	if err := json.NewEncoder(rw).Encode(UserRequestsResponse{Requests: userRequests}); err != nil {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -211,8 +210,7 @@ func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 
 	id := r.URL.Query().Get("id")
 
-	idExp := "^[1-9]\\d*"
-	ok, err := regexp.MatchString(idExp, id)
+	ok, err := ValidateID(id)
 	if !ok {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
@@ -222,8 +220,8 @@ func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, err = s.Repo.GetCVID(id)
-	if errors.Is(err, repository.ErrNoFile) {
+	_, err = s.Referral.GetCVID(id)
+	if errors.Is(err, service.ErrNoFile) {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -245,9 +243,7 @@ func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Content-Type", "application/json")
 
 	state := r.URL.Query().Get("state")
-
-	stateExp := "^([Aa]ccepted|[Rr]ejected|[Ss]ubmitted)$"
-	ok, err := regexp.MatchString(stateExp, state)
+	ok, err := ValidateRequestState(state)
 	if !ok {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
@@ -258,9 +254,7 @@ func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	requestId := r.URL.Query().Get("id")
-
-	idExp := "^[1-9]\\d*"
-	ok, err = regexp.MatchString(idExp, requestId)
+	ok, err = ValidateID(requestId)
 	if !ok {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
@@ -270,8 +264,8 @@ func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.Repo.UpdateRequest(requestId, state)
-	if errors.Is(err, repository.ErrNoResult) {
+	err = s.Referral.UpdateRequest(requestId, state)
+	if errors.Is(err, service.ErrNoResult) {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -289,23 +283,23 @@ func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 // ValidateCandidateSendingRequest validates data after sending a candidate.
 func (r *CandidateSendingRequest) ValidateCandidateSendingRequest() error {
 	if len(r.CandidateName) == 0 || len(r.CandidateSurname) == 0 || len(r.FileName) == 0 {
-		return errParameterRequired
+		return fmt.Errorf("%w: wrong length", ErrInvalidParameter)
 	}
 	fileExp := "([a-zA-Z0-9\\s_\\.\\-\\(\\):])+(.PDF|.pdf)$"
 	isRightFile, _ := regexp.MatchString(fileExp, r.FileName)
 	if !isRightFile {
-		return errInvalidFile
+		return fmt.Errorf("%w: invalid filename or filetype", ErrInvalidParameter)
 	}
 
 	nameSurnameExp := "(^[A-Za-zА-Яа-я]{2,16})?([ ]{0,1})([A-Za-zА-Яа-я]{2,16})?"
 	isValid, _ := regexp.MatchString(nameSurnameExp, r.CandidateName)
 	if !isValid {
-		return errInvalidCandidateData
+		return fmt.Errorf("%w: name has invalid format", ErrInvalidParameter)
 	}
 
 	isValid, _ = regexp.MatchString(nameSurnameExp, r.CandidateSurname)
 	if !isValid {
-		return errInvalidCandidateData
+		return fmt.Errorf("%w: surname has invalid format", ErrInvalidParameter)
 	}
 
 	return nil
@@ -313,30 +307,60 @@ func (r *CandidateSendingRequest) ValidateCandidateSendingRequest() error {
 
 // ValidateSignUpRequest validates data after signup.
 func (r *SignUpRequest) ValidateSignUpRequest() error {
-	if r.Name == "" || r.Password == "" {
-		return errParameterRequired
+	if r.Name == "" {
+		return fmt.Errorf("%w: name", ErrInvalidParameter)
+	}
+
+	if r.Password == "" {
+		return fmt.Errorf("%w: password", ErrInvalidParameter)
 	}
 
 	if len(r.Name) < 6 || len(r.Name) > 18 {
-		return errInvalidLength
+		return fmt.Errorf("%w: wrong length", ErrInvalidParameter)
 	}
 
 	if len(r.Password) < 6 || len(r.Password) > 18 {
-		return errInvalidLength
+		return fmt.Errorf("%w: wrong length", ErrInvalidParameter)
 	}
 
 	return nil
 }
 
 // ValidateLogInRequest validates data after login.
-func (r *LogInRequest) ValidateLogInRequest(user repository.User) error {
-	if r.Name == "" || r.Password == "" {
-		return errParameterRequired
+func (r *LogInRequest) ValidateLogInRequest() error {
+	if r.Name == "" {
+		return fmt.Errorf("%w: name", ErrInvalidParameter)
 	}
 
-	if !hash.CheckPassowrdHash(r.Password, user.Password) {
-		return errWrongPassword
+	if r.Password == "" {
+		return fmt.Errorf("%w: password", ErrInvalidParameter)
 	}
 
 	return nil
+}
+
+func ValidateRequestState(state string) (bool, error) {
+	stateExp := "^([Aa]ccepted|[Rr]ejected|[Ss]ubmitted)$"
+	ok, err := regexp.MatchString(stateExp, state)
+	if !ok {
+		return ok, fmt.Errorf("%w: id has bad format", ErrInvalidParameter)
+	}
+	if err != nil {
+		return ok, err
+	}
+
+	return ok, nil
+}
+
+func ValidateID(id string) (bool, error) {
+	idExp := "^[1-9]\\d*"
+	ok, err := regexp.MatchString(idExp, id)
+	if !ok {
+		return ok, fmt.Errorf("%w: id has bad format", ErrInvalidParameter)
+	}
+	if err != nil {
+		return ok, err
+	}
+
+	return ok, nil
 }

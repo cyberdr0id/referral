@@ -3,6 +3,8 @@ package repository
 import (
 	"database/sql"
 	"errors"
+
+	"github.com/lib/pq"
 )
 
 var (
@@ -12,6 +14,12 @@ var (
 	ErrNoFile = errors.New("there is no file with input id")
 	// ErrNoFile presents an error when there are no results for the entered data.
 	ErrNoResult = errors.New("there are no results for the entered data")
+	// ErrUserAlreadyExists handles an error when user tries to sign up with existing data.
+	ErrUserAlreadyExists = errors.New("user already exists")
+)
+
+const (
+	errorCodeName = "unique_violation"
 )
 
 // CreateUser registers a new user.
@@ -23,6 +31,9 @@ func (r *Repository) CreateUser(name, password string) (string, error) {
 
 	row := r.db.QueryRow(query, name, password)
 	err := row.Scan(&id)
+	if err, ok := err.(*pq.Error); ok && err.Code.Name() == errorCodeName {
+		return "", ErrUserAlreadyExists
+	}
 	if err != nil {
 		return "", err
 	}

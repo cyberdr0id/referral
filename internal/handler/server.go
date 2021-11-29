@@ -5,14 +5,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/cyberdr0id/referral/internal/repository"
 	"github.com/cyberdr0id/referral/internal/service"
 	"github.com/gorilla/mux"
 )
 
 type Server struct {
 	HTTPServer *http.Server
-	Repo       *repository.Repository
 	Router     *mux.Router
 	Auth       service.Auth
 	Referral   service.Referral
@@ -30,9 +28,8 @@ func (s *Server) Run(port string, handler http.Handler) error {
 	return s.HTTPServer.ListenAndServe()
 }
 
-func NewServer(repo *repository.Repository, auth service.Auth, referral service.Referral) *Server {
+func NewServer(auth service.Auth, referral service.Referral) *Server {
 	s := &Server{
-		Repo:     repo,
 		Router:   mux.NewRouter(),
 		Auth:     auth,
 		Referral: referral,
