@@ -44,7 +44,7 @@ func ParseToken(_token string) (string, error) {
 
 	claims, ok := token.Claims.(*jwt.StandardClaims)
 	if !ok {
-		return "", fmt.Errorf("")
+		return "", fmt.Errorf("cannot get claims from token")
 	}
 
 	return claims.Subject, nil
