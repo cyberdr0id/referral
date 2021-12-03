@@ -13,13 +13,13 @@ type Claims struct {
 }
 
 type TokenManager struct {
-	key        string
+	key        []byte
 	expiryTime int64
 }
 
 func NewTokenManager(key string, expiryTime int) *TokenManager {
 	return &TokenManager{
-		key:        key,
+		key:        []byte(key),
 		expiryTime: time.Now().Add(time.Minute * time.Duration(expiryTime)).Unix(),
 	}
 }
