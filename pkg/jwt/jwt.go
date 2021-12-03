@@ -20,7 +20,7 @@ type TokenManager struct {
 func NewTokenManager(key string, expiryTime int) *TokenManager {
 	return &TokenManager{
 		key:        []byte(key),
-		expiryTime: time.Now().Add(time.Minute * time.Duration(expiryTime)).Unix(),
+		expiryTime: time.Now().Add(time.Hour * time.Duration(expiryTime)).Unix(),
 	}
 }
 
