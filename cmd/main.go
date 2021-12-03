@@ -6,6 +6,7 @@ import (
 
 	"github.com/cyberdr0id/referral/internal/handler"
 	"github.com/cyberdr0id/referral/internal/repository"
+	"github.com/cyberdr0id/referral/pkg/jwt"
 	"github.com/spf13/viper"
 )
 
@@ -29,6 +30,7 @@ func main() {
 	}
 
 	repo := repository.NewRepository(db)
+	tm := jwt.NewTokenManager(viper.GetString("jwt.key"), viper.GetInt("jwt.expiryTime"))
 
 	srv := handler.NewServer(repo)
 
