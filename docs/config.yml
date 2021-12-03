@@ -11,3 +11,4 @@ db:
 jwt:
   key: "Str0ngP@$$w0rd?##"
   expiryTime: 20
+  
