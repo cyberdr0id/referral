@@ -13,14 +13,14 @@ type Claims struct {
 }
 
 type TokenManager struct {
-	key        []byte
-	expiryTime int64
+	key              []byte
+	expiryTimeInHour int
 }
 
 func NewTokenManager(key string, expiryTime int) *TokenManager {
 	return &TokenManager{
-		key:        []byte(key),
-		expiryTime: time.Now().Add(time.Hour * time.Duration(expiryTime)).Unix(),
+		key:              []byte(key),
+		expiryTimeInHour: expiryTime,
 	}
 }
 
@@ -28,7 +28,7 @@ func (t *TokenManager) GenerateToken(userID string, isAdmin bool) (string, error
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, &Claims{
 		IsAdmin: isAdmin,
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: t.expiryTime,
+			ExpiresAt: time.Now().Add(time.Hour * time.Duration(t.expiryTimeInHour)).Unix(),
 			Subject:   userID,
 		},
 	}).SignedString(t.key)
