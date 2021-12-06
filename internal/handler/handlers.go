@@ -49,8 +49,7 @@ type DownloadResponse struct {
 
 // LogInResponse type presents structure of the log in response.
 type LogInResponse struct {
-	AccessToken  string `json:"accessToken"`
-	RefreshToken string `json:"refreshToken"`
+	AccessToken string `json:"accessToken"`
 }
 
 // SignUpResponse type presents structure of the sign up response.
@@ -95,11 +94,6 @@ func (s *Server) SignUp(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// pass, err := hash.HashPassword(request.Password)
-	// if err != nil {
-	// 	http.Error(rw, err.Error(), http.StatusInternalServerError)
-	// 	return
-	// }
 	id, err := s.Auth.CreateUser(request.Name, request.Password)
 	if errors.Is(err, service.ErrUserAlreadyExists) {
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusConflict)
@@ -128,7 +122,7 @@ func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusUnauthorized)
 		return
 	}
-	accessToken, refreshToken, err := s.Auth.LogIn(request.Name, request.Password)
+	accessToken, err := s.Auth.LogIn(request.Name, request.Password)
 	if errors.Is(err, service.ErrNoUser) {
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusUnauthorized)
 		return
@@ -138,7 +132,7 @@ func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sendResponse(rw, LogInResponse{AccessToken: accessToken, RefreshToken: refreshToken}, http.StatusOK)
+	sendResponse(rw, LogInResponse{AccessToken: accessToken}, http.StatusOK)
 }
 
 // SendCandidate sends candidate info and his cv.

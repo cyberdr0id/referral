@@ -50,13 +50,12 @@ func (mr *MockAuthMockRecorder) CreateUser(name, password interface{}) *gomock.C
 }
 
 // LogIn mocks base method.
-func (m *MockAuth) LogIn(name, password string) (string, string, error) {
+func (m *MockAuth) LogIn(name, password string) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "LogIn", name, password)
 	ret0, _ := ret[0].(string)
-	ret1, _ := ret[1].(string)
-	ret2, _ := ret[2].(error)
-	return ret0, ret1, ret2
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // LogIn indicates an expected call of LogIn.

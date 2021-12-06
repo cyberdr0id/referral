@@ -256,13 +256,12 @@ func TestServer_LogIn(t *testing.T) {
 			},
 			expectedStatusCode: http.StatusOK,
 			expectedResponse: LogInResponse{
-				AccessToken:  token,
-				RefreshToken: token,
+				AccessToken: token,
 			},
 			isErrorExpeced:        false,
 			expectedErrorResponse: ErrorResponse{},
 			mock: func(s *mock_service.MockAuth, name, password string) {
-				s.EXPECT().LogIn(name, password).Return(token, token, nil)
+				s.EXPECT().LogIn(name, password).Return(token, nil)
 			},
 		},
 		{
@@ -312,7 +311,7 @@ func TestServer_LogIn(t *testing.T) {
 				Message: service.ErrNoUser.Error(),
 			},
 			mock: func(s *mock_service.MockAuth, name, password string) {
-				s.EXPECT().LogIn(name, password).Return(emptyParameter, emptyParameter, service.ErrNoUser)
+				s.EXPECT().LogIn(name, password).Return(emptyParameter, service.ErrNoUser)
 			},
 		},
 		{
@@ -330,7 +329,7 @@ func TestServer_LogIn(t *testing.T) {
 				Message: errInternalServerError.Error(),
 			},
 			mock: func(s *mock_service.MockAuth, name, password string) {
-				s.EXPECT().LogIn(name, password).Return(token, token, errInternalServerError)
+				s.EXPECT().LogIn(name, password).Return(token, errInternalServerError)
 			},
 		},
 	}
