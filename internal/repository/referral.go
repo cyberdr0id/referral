@@ -40,7 +40,6 @@ func (r *Repository) GetRequests(id string, t string) ([]Request, error) {
 	return requests, nil
 }
 
-// TODO: change return value to Candidate object if only ID is bad and change response in swagger file
 // AddCandidate adds submitted candidate.
 func (r *Repository) AddCandidate(name, surname, fileID string) (string, error) {
 	var requestID string
@@ -56,6 +55,7 @@ func (r *Repository) AddCandidate(name, surname, fileID string) (string, error) 
 	return requestID, nil
 }
 
+// UpdateRequest updates user request status.
 func (r *Repository) UpdateRequest(id, newState string) error {
 	query := `UPDATE requests 
 			  SET status = $1

@@ -11,7 +11,7 @@ type AuthRepository interface {
 	GetUser(name, password string) (User, error)
 }
 
-// ReferralRepositpry presents methods for candidates manipulating.
+// ReferralRepository presents methods for candidates manipulating.
 type ReferralRepository interface {
 	GetRequests(id int) ([]Request, error)
 	AddCandidate(name, surname string, fileID int) (string, error)
@@ -52,6 +52,7 @@ type Repository struct {
 	db *sql.DB
 }
 
+// NewRepository creates a new instance of Repository.
 func NewRepository(db *sql.DB) *Repository {
 	return &Repository{db: db}
 }

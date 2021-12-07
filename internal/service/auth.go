@@ -8,11 +8,13 @@ import (
 	"github.com/cyberdr0id/referral/pkg/jwt"
 )
 
+// AuthService present a service for authorization service.
 type AuthService struct {
 	repo         *repository.Repository
 	tokenManager *jwt.TokenManager
 }
 
+// NewAuthService creates a new instance of AuthService.
 func NewAuthService(repo *repository.Repository, tm *jwt.TokenManager) *AuthService {
 	return &AuthService{
 		repo:         repo,
@@ -20,6 +22,7 @@ func NewAuthService(repo *repository.Repository, tm *jwt.TokenManager) *AuthServ
 	}
 }
 
+// CreateUser hash password and add user to database.
 func (s *AuthService) CreateUser(name, password string) (string, error) {
 	pass, err := hash.HashPassword(password)
 	if err != nil {
