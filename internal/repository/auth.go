@@ -3,6 +3,7 @@ package repository
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 
 	"github.com/lib/pq"
 )
@@ -12,7 +13,7 @@ var (
 	ErrNoUser = errors.New("user doesn't exists")
 	// ErrNoFile handle an error when user try to get non-database CV.
 	ErrNoFile = errors.New("there is no file with input id")
-	// ErrNoFile presents an error when there are no results for the entered data.
+	// ErrNoResult presents an error when there are no results for the entered data.
 	ErrNoResult = errors.New("there are no results for the entered data")
 	// ErrUserAlreadyExists handles an error when user tries to sign up with existing data.
 	ErrUserAlreadyExists = errors.New("user already exists")
@@ -29,13 +30,12 @@ func (r *Repository) CreateUser(name, password string) (string, error) {
 	query := `INSERT INTO users(name, password)
 			  VALUES($1, $2) RETURNING id;`
 
-	row := r.db.QueryRow(query, name, password)
-	err := row.Scan(&id)
+	err := r.db.QueryRow(query, name, password).Scan(&id)
 	if err, ok := err.(*pq.Error); ok && err.Code.Name() == errorCodeName {
 		return "", ErrUserAlreadyExists
 	}
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("cannot add user to database: %w", err)
 	}
 
 	return id, nil
