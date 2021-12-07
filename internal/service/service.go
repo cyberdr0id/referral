@@ -18,7 +18,7 @@ var (
 )
 
 type Auth interface {
-	LogIn(name, password string) (string, string, error)
+	LogIn(name, password string) (string, error)
 	CreateUser(name, password string) (string, error)
 }
 
