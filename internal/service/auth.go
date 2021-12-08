@@ -48,7 +48,7 @@ func (s *AuthService) LogIn(name, password string) (string, error) {
 		return "", fmt.Errorf("cannot get user from database: %w", err)
 	}
 
-	ok := hash.CheckPassowrdHash(password, user.Password)
+	ok := hash.CheckPasswordHash(password, user.Password)
 	if !ok {
 		return "", ErrNoUser
 	}
