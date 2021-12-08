@@ -221,15 +221,15 @@ func TestServer_SignUp(t *testing.T) {
 				var response ErrorResponse
 				_ = json.Unmarshal(w.Body.Bytes(), &response)
 
-				assert.Equal(t, tc.expectedStatusCode, w.Code)
 				assert.Equal(t, tc.expectedErrorResponse, response)
 			} else {
 				var response SignUpResponse
 				_ = json.Unmarshal(w.Body.Bytes(), &response)
 
-				assert.Equal(t, tc.expectedStatusCode, w.Code)
 				assert.Equal(t, tc.expectedResponse, response)
 			}
+
+			assert.Equal(t, tc.expectedStatusCode, w.Code)
 		})
 	}
 }
@@ -315,6 +315,24 @@ func TestServer_LogIn(t *testing.T) {
 			},
 		},
 		{
+			testName:        "Failure: wrong password for existent user, status 401",
+			serviceName:     defaultName,
+			servicePassword: shortPassword,
+			requestBody: LogInRequest{
+				Name:     defaultName,
+				Password: shortPassword,
+			},
+			expectedStatusCode: http.StatusUnauthorized,
+			expectedResponse:   LogInResponse{},
+			isErrorExpeced:     true,
+			expectedErrorResponse: ErrorResponse{
+				Message: service.ErrNoUser.Error(),
+			},
+			mock: func(s *mock_service.MockAuth, name, password string) {
+				s.EXPECT().LogIn(name, password).Return(emptyParameter, service.ErrNoUser)
+			},
+		},
+		{
 			testName:        "Failure: internal server error, status 500",
 			serviceName:     defaultName,
 			servicePassword: defaultPassword,
@@ -355,15 +373,15 @@ func TestServer_LogIn(t *testing.T) {
 				var response ErrorResponse
 				_ = json.Unmarshal(w.Body.Bytes(), &response)
 
-				assert.Equal(t, tc.expectedStatusCode, w.Code)
 				assert.Equal(t, tc.expectedErrorResponse, response)
 			} else {
 				var response LogInResponse
 				_ = json.Unmarshal(w.Body.Bytes(), &response)
 
-				assert.Equal(t, tc.expectedStatusCode, w.Code)
 				assert.Equal(t, tc.expectedResponse, response)
 			}
+
+			assert.Equal(t, tc.expectedStatusCode, w.Code)
 		})
 	}
 }
