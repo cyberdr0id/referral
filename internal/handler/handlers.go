@@ -13,31 +13,31 @@ import (
 
 var currentUserID string
 
-// AuthRequest presents request for login.
+// LogInRequest presents request for login.
 type LogInRequest struct {
 	Name     string `json:"name"`
 	Password string `json:"password"`
 }
 
-// AuthRequest presents request for signup.
+// SignUpRequest presents request for signup.
 type SignUpRequest struct {
 	Name     string `json:"name"`
 	Password string `json:"password"`
 }
 
-// CandidateRequest presents request for sending candidate.
+// CandidateSendingRequest presents request for sending candidate.
 type CandidateSendingRequest struct {
 	FileName         string
 	CandidateName    string
 	CandidateSurname string
 }
 
-// UserRequests type presents structure which contains all user requests.
+// UserRequestsResponse type presents structure which contains all user requests.
 type UserRequestsResponse struct {
 	Requests []repository.Request `json:"requests"`
 }
 
-// CandidateResponse type presents candidate sending response.
+// CandidateSendingResponse type presents candidate sending response.
 type CandidateSendingResponse struct {
 	CandidateID string `json:"candidateid"`
 }
@@ -49,8 +49,7 @@ type DownloadResponse struct {
 
 // LogInResponse type presents structure of the log in response.
 type LogInResponse struct {
-	AccessToken  string `json:"accessToken"`
-	RefreshToken string `json:"refreshToken"`
+	AccessToken string `json:"accessToken"`
 }
 
 // SignUpResponse type presents structure of the sign up response.
@@ -58,7 +57,7 @@ type SignUpResponse struct {
 	ID string `json:"id"`
 }
 
-// UpdateResponse type presents message about success of updating.
+// UpdateCandidateResponse type presents message about success of updating.
 type UpdateCandidateResponse struct {
 	Message string `json:"message"`
 }
@@ -95,12 +94,7 @@ func (s *Server) SignUp(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// pass, err := hash.HashPassword(request.Password)
-	// if err != nil {
-	// 	http.Error(rw, err.Error(), http.StatusInternalServerError)
-	// 	return
-	// }
-	id, err := s.Auth.CreateUser(request.Name, request.Password)
+	id, err := s.Auth.SignUp(request.Name, request.Password)
 	if errors.Is(err, service.ErrUserAlreadyExists) {
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusConflict)
 		return
@@ -128,7 +122,7 @@ func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusUnauthorized)
 		return
 	}
-	accessToken, refreshToken, err := s.Auth.LogIn(request.Name, request.Password)
+	accessToken, err := s.Auth.LogIn(request.Name, request.Password)
 	if errors.Is(err, service.ErrNoUser) {
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusUnauthorized)
 		return
@@ -138,7 +132,7 @@ func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sendResponse(rw, LogInResponse{AccessToken: accessToken, RefreshToken: refreshToken}, http.StatusOK)
+	sendResponse(rw, LogInResponse{AccessToken: accessToken}, http.StatusOK)
 }
 
 // SendCandidate sends candidate info and his cv.
@@ -253,8 +247,8 @@ func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	requestId := r.URL.Query().Get("id")
-	ok, err = ValidateID(requestId)
+	requestID := r.URL.Query().Get("id")
+	ok, err = ValidateID(requestID)
 	if !ok {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
@@ -264,7 +258,7 @@ func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = s.Referral.UpdateRequest(requestId, state)
+	err = s.Referral.UpdateRequest(requestID, state)
 	if errors.Is(err, service.ErrNoResult) {
 		http.Error(rw, err.Error(), http.StatusBadRequest)
 		return
@@ -339,6 +333,7 @@ func (r *LogInRequest) ValidateLogInRequest() error {
 	return nil
 }
 
+// ValidateRequestState validates data for request filtering.
 func ValidateRequestState(state string) (bool, error) {
 	stateExp := "^([Aa]ccepted|[Rr]ejected|[Ss]ubmitted)$"
 	ok, err := regexp.MatchString(stateExp, state)
@@ -352,6 +347,7 @@ func ValidateRequestState(state string) (bool, error) {
 	return ok, nil
 }
 
+// ValidateID checks if parameter is number.
 func ValidateID(id string) (bool, error) {
 	idExp := "^[1-9]\\d*"
 	ok, err := regexp.MatchString(idExp, id)

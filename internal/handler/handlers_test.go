@@ -63,7 +63,7 @@ func TestServer_SignUp(t *testing.T) {
 			isErrorExpeced:        false,
 			expectedErrorResponse: ErrorResponse{},
 			mock: func(s *mock_service.MockAuth, name, password string) {
-				s.EXPECT().CreateUser(name, password).Return(defaultID, nil)
+				s.EXPECT().SignUp(name, password).Return(defaultID, nil)
 			},
 		},
 		{
@@ -81,7 +81,7 @@ func TestServer_SignUp(t *testing.T) {
 				Message: userAlreadyExistsMessage,
 			},
 			mock: func(s *mock_service.MockAuth, name, password string) {
-				s.EXPECT().CreateUser(name, password).Return("", service.ErrUserAlreadyExists)
+				s.EXPECT().SignUp(name, password).Return("", service.ErrUserAlreadyExists)
 			},
 		},
 		{
@@ -195,7 +195,7 @@ func TestServer_SignUp(t *testing.T) {
 				Message: errInternalServerError.Error(),
 			},
 			mock: func(s *mock_service.MockAuth, name, password string) {
-				s.EXPECT().CreateUser(name, password).Return("", errInternalServerError)
+				s.EXPECT().SignUp(name, password).Return("", errInternalServerError)
 			},
 		},
 	}
@@ -256,13 +256,12 @@ func TestServer_LogIn(t *testing.T) {
 			},
 			expectedStatusCode: http.StatusOK,
 			expectedResponse: LogInResponse{
-				AccessToken:  token,
-				RefreshToken: token,
+				AccessToken: token,
 			},
 			isErrorExpeced:        false,
 			expectedErrorResponse: ErrorResponse{},
 			mock: func(s *mock_service.MockAuth, name, password string) {
-				s.EXPECT().LogIn(name, password).Return(token, token, nil)
+				s.EXPECT().LogIn(name, password).Return(token, nil)
 			},
 		},
 		{
@@ -312,7 +311,7 @@ func TestServer_LogIn(t *testing.T) {
 				Message: service.ErrNoUser.Error(),
 			},
 			mock: func(s *mock_service.MockAuth, name, password string) {
-				s.EXPECT().LogIn(name, password).Return(emptyParameter, emptyParameter, service.ErrNoUser)
+				s.EXPECT().LogIn(name, password).Return(emptyParameter, service.ErrNoUser)
 			},
 		},
 		{
@@ -330,7 +329,7 @@ func TestServer_LogIn(t *testing.T) {
 				Message: errInternalServerError.Error(),
 			},
 			mock: func(s *mock_service.MockAuth, name, password string) {
-				s.EXPECT().LogIn(name, password).Return(token, token, errInternalServerError)
+				s.EXPECT().LogIn(name, password).Return(token, errInternalServerError)
 			},
 		},
 	}
