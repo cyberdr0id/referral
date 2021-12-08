@@ -36,3 +36,22 @@ func (s *AuthService) CreateUser(name, password string) (string, error) {
 
 	return id, nil
 }
+
+func (s *AuthService) LogIn(name, password string) (string, error) {
+	user, err := s.repo.GetUser(name)
+	if err != nil {
+		return "", err
+	}
+
+	ok := hash.CheckPassowrdHash(password, user.Password)
+	if !ok {
+		return "", nil
+	}
+
+	token, err := s.tokenManager.GenerateToken(user.ID, user.IsAdmin)
+	if err != nil {
+		return "", err
+	}
+
+	return token, nil
+}
