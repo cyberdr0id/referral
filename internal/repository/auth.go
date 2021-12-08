@@ -45,7 +45,7 @@ func (r *Repository) CreateUser(name, password string) (string, error) {
 func (r *Repository) GetUser(name string) (User, error) {
 	var user User
 
-	query := `SELECT id, name, password, isadmin, created, updated 
+	query := `SELECT id, name, password, is_admin, created, updated 
 			  FROM users 
 			  WHERE name=$1;`
 

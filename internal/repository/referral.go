@@ -13,8 +13,8 @@ func (r *Repository) GetRequests(id string, t string) ([]Request, error) {
 		t = "Updated"
 	}
 
-	query := `SELECT id, userid, candidateid, status, created, updated 
-			  FROM requests WHERE userid = $1 
+	query := `SELECT id, user_id, candidate_id, status, created, updated 
+			  FROM requests WHERE user_id = $1 
 			  ORDER BY $2`
 
 	rows, err := r.db.Query(query, id, t)
@@ -44,7 +44,7 @@ func (r *Repository) GetRequests(id string, t string) ([]Request, error) {
 func (r *Repository) AddCandidate(name, surname, fileID string) (string, error) {
 	var requestID string
 
-	query := `INSERT INTO candidates(name, surname, cvosfileid) 
+	query := `INSERT INTO candidates(name, surname, cv_os_file_id) 
 			  VALUES($1, $2, $3) RETURNING id;`
 
 	row := r.db.QueryRow(query, name, surname, fileID)
@@ -81,7 +81,7 @@ func (r *Repository) UpdateRequest(id, newState string) error {
 func (r *Repository) GetCVID(id string) (string, error) {
 	var fileID string
 
-	query := `SELECT cvosfileid
+	query := `SELECT cv_os_file_id
 			  FROM candidates
 			  WHERE id = $1`
 
