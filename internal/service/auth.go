@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/cyberdr0id/referral/internal/repository"
@@ -22,7 +23,7 @@ func NewAuthService(repo *repository.Repository, tm *jwt.TokenManager) *AuthServ
 	}
 }
 
-// CreateUser hash password and add user to database.
+// SignUp hash password and add user to database.
 func (s *AuthService) SignUp(name, password string) (string, error) {
 	pass, err := hash.HashPassword(password)
 	if err != nil {
@@ -35,4 +36,27 @@ func (s *AuthService) SignUp(name, password string) (string, error) {
 	}
 
 	return id, nil
+}
+
+// LogIn gets user from database, comparing passwords and generate JWT token - auathorize user.
+func (s *AuthService) LogIn(name, password string) (string, error) {
+	user, err := s.repo.GetUser(name)
+	if errors.Is(err, repository.ErrNoUser) {
+		return "", ErrNoUser
+	}
+	if err != nil {
+		return "", fmt.Errorf("cannot get user from database: %w", err)
+	}
+
+	ok := hash.CheckPassowrdHash(password, user.Password)
+	if !ok {
+		return "", ErrNoUser
+	}
+
+	token, err := s.tokenManager.GenerateToken(user.ID, user.IsAdmin)
+	if err != nil {
+		return "", fmt.Errorf("cannot generate JWT token: %w", err)
+	}
+
+	return token, nil
 }
