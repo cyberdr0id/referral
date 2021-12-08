@@ -23,7 +23,7 @@ func NewAuthService(repo *repository.Repository, tm *jwt.TokenManager) *AuthServ
 }
 
 // CreateUser hash password and add user to database.
-func (s *AuthService) CreateUser(name, password string) (string, error) {
+func (s *AuthService) SignUp(name, password string) (string, error) {
 	pass, err := hash.HashPassword(password)
 	if err != nil {
 		return "", fmt.Errorf("unable to hash password: %w", err)
@@ -31,7 +31,7 @@ func (s *AuthService) CreateUser(name, password string) (string, error) {
 
 	id, err := s.repo.CreateUser(name, pass)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("cannot create user: %w", err)
 	}
 
 	return id, nil

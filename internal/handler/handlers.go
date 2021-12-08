@@ -94,7 +94,7 @@ func (s *Server) SignUp(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := s.Auth.CreateUser(request.Name, request.Password)
+	id, err := s.Auth.SignUp(request.Name, request.Password)
 	if errors.Is(err, service.ErrUserAlreadyExists) {
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusConflict)
 		return

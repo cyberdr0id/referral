@@ -63,7 +63,7 @@ func TestServer_SignUp(t *testing.T) {
 			isErrorExpeced:        false,
 			expectedErrorResponse: ErrorResponse{},
 			mock: func(s *mock_service.MockAuth, name, password string) {
-				s.EXPECT().CreateUser(name, password).Return(defaultID, nil)
+				s.EXPECT().SignUp(name, password).Return(defaultID, nil)
 			},
 		},
 		{
@@ -81,7 +81,7 @@ func TestServer_SignUp(t *testing.T) {
 				Message: userAlreadyExistsMessage,
 			},
 			mock: func(s *mock_service.MockAuth, name, password string) {
-				s.EXPECT().CreateUser(name, password).Return("", service.ErrUserAlreadyExists)
+				s.EXPECT().SignUp(name, password).Return("", service.ErrUserAlreadyExists)
 			},
 		},
 		{
@@ -195,7 +195,7 @@ func TestServer_SignUp(t *testing.T) {
 				Message: errInternalServerError.Error(),
 			},
 			mock: func(s *mock_service.MockAuth, name, password string) {
-				s.EXPECT().CreateUser(name, password).Return("", errInternalServerError)
+				s.EXPECT().SignUp(name, password).Return("", errInternalServerError)
 			},
 		},
 	}

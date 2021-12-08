@@ -20,7 +20,7 @@ var (
 // Auth presents interface for authorization.
 type Auth interface {
 	LogIn(name, password string) (string, error)
-	CreateUser(name, password string) (string, error)
+	SignUp(name, password string) (string, error)
 }
 
 // Referral presents a type of CV interaction.
