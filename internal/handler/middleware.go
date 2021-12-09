@@ -15,7 +15,7 @@ const (
 )
 
 // AuthorizationMiddleware checks if user is authorized.
-func (s *Server) AuthorizationMiddleware(nextHandler http.HandlerFunc) http.Handler {
+func (s *Server) AuthorizationMiddleware(nextHandler http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		header := r.Header.Get(authHeader)
 		if header == "" {

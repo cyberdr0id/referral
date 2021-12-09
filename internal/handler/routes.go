@@ -6,8 +6,11 @@ func (s *Server) InitRoutes() {
 	s.Router.HandleFunc("/auth/login", s.LogIn).Methods("POST")   // user authorization
 	s.Router.HandleFunc("/auth/signup", s.SignUp).Methods("POST") // user registration
 
-	s.Router.HandleFunc("/references", s.SendCandidate).Methods("POST") // sending candidate
-	s.Router.HandleFunc("/references", s.GetRequests).Methods("GET")    // user request history
-	s.Router.HandleFunc("/references", s.UpdateRequest).Methods("PUT")  // user request history
-	s.Router.HandleFunc("/cvs", s.DownloadCV).Methods("GET")            // loading cv
+	sr := s.Router.NewRoute().Subrouter()
+	sr.Use(s.AuthorizationMiddleware)
+
+	sr.HandleFunc("/references", s.SendCandidate).Methods("POST") // sending candidate
+	sr.HandleFunc("/references", s.GetRequests).Methods("GET")    // user request history
+	sr.HandleFunc("/references", s.UpdateRequest).Methods("PUT")  // user request history
+	sr.HandleFunc("/cvs", s.DownloadCV).Methods("GET")            // loading cv
 }
