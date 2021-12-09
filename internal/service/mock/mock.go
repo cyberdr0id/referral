@@ -8,6 +8,7 @@ import (
 	reflect "reflect"
 
 	repository "github.com/cyberdr0id/referral/internal/repository"
+	jwt "github.com/dgrijalva/jwt-go"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -47,6 +48,21 @@ func (m *MockAuth) LogIn(name, password string) (string, error) {
 func (mr *MockAuthMockRecorder) LogIn(name, password interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LogIn", reflect.TypeOf((*MockAuth)(nil).LogIn), name, password)
+}
+
+// ParseToken mocks base method.
+func (m *MockAuth) ParseToken(_token string) (*jwt.StandardClaims, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ParseToken", _token)
+	ret0, _ := ret[0].(*jwt.StandardClaims)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ParseToken indicates an expected call of ParseToken.
+func (mr *MockAuthMockRecorder) ParseToken(_token interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ParseToken", reflect.TypeOf((*MockAuth)(nil).ParseToken), _token)
 }
 
 // SignUp mocks base method.
