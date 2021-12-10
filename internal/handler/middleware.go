@@ -1,10 +1,13 @@
 package handler
 
 import (
+	"context"
 	"fmt"
 	"net/http"
 	"strings"
 )
+
+type key int
 
 const (
 	authHeaderMessage     = "authorization header required"
@@ -49,6 +52,9 @@ func (s *Server) AuthorizationMiddleware(nextHandler http.Handler) http.Handler 
 		}
 
 		currentUserID = claims.Subject
+		var currentUserIDKey key
+
+		_ = context.WithValue(r.Context(), currentUserIDKey, currentUserID)
 
 		nextHandler.ServeHTTP(rw, r)
 	})
