@@ -1,13 +1,12 @@
 package handler
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"strings"
-)
 
-type key int
+	"github.com/cyberdr0id/referral/pkg/context"
+)
 
 const (
 	authHeaderMessage     = "authorization header required"
@@ -52,10 +51,9 @@ func (s *Server) AuthorizationMiddleware(nextHandler http.Handler) http.Handler 
 		}
 
 		currentUserID = claims.Subject
-		var currentUserIDKey key
 
-		_ = context.WithValue(r.Context(), currentUserIDKey, currentUserID)
+		ctx := context.Set(r.Context(), currentUserID)
 
-		nextHandler.ServeHTTP(rw, r)
+		nextHandler.ServeHTTP(rw, r.WithContext(ctx))
 	})
 }
