@@ -137,36 +137,39 @@ func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 
 // SendCandidate sends candidate info and his cv.
 func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
-	rw.Header().Set("Content-Type", "application/json")
-
 	var request CandidateSendingRequest
 
-	file, header, err := r.FormFile("fileName")
+	filenameParam := "fileName"
+	candidateNameParam := "candidateName"
+	candidateSurnameParam := "candidateSurname"
+
+	file, header, err := r.FormFile(filenameParam)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
+		sendResponse(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
 
 	request.FileName = header.Filename
-	request.CandidateName = r.FormValue("candidateName")
-	request.CandidateSurname = r.FormValue("candidateSurname")
+	request.CandidateName = r.FormValue(candidateNameParam)
+	request.CandidateSurname = r.FormValue(candidateSurnameParam)
 
 	if err := request.ValidateCandidateSendingRequest(); err != nil {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
+		sendResponse(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
+
 	// TODO: adding file to object storage
 	fileID := "1"
 
 	id, err := s.Referral.AddCandidate(request.CandidateName, request.CandidateSurname, fileID)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		sendResponse(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
 	if err := json.NewEncoder(rw).Encode(CandidateSendingResponse{CandidateID: id}); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		sendResponse(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
