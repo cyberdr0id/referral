@@ -162,7 +162,7 @@ func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 	// TODO: adding file to object storage
 	fileID := "1"
 
-	id, err := s.Referral.AddCandidate(request.CandidateName, request.CandidateSurname, fileID)
+	id, err := s.Referral.AddCandidate(r.Context(), request.CandidateName, request.CandidateSurname, fileID)
 	if err != nil {
 		sendResponse(rw, err.Error(), http.StatusInternalServerError)
 		return
