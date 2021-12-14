@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"errors"
 
 	"github.com/cyberdr0id/referral/internal/repository"
@@ -28,7 +29,7 @@ type Auth interface {
 // Referral presents a type of CV interaction.
 type Referral interface {
 	GetRequests(id, t string) ([]repository.Request, error)
-	AddCandidate(name, surname, fileID string) (string, error)
+	AddCandidate(ctx context.Context, request SubmitCandidateRequest) (string, error)
 	GetCVID(id string) (string, error)
 	UpdateRequest(id, status string) error
 }
