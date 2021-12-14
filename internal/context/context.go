@@ -12,7 +12,7 @@ func Set(ctx context.Context, userID string) context.Context {
 }
 
 // Get gets the value by key from application context.
-func Get(ctx context.Context) (string, bool) {
+func GetUserID(ctx context.Context) (string, bool) {
 	val, ok := ctx.Value(id).(string)
 	return val, ok
 }
