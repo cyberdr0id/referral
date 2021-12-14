@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"regexp"
 
 	"github.com/cyberdr0id/referral/internal/repository"
 	mycontext "github.com/cyberdr0id/referral/pkg/context"
@@ -48,29 +47,4 @@ func (s *ReferralService) AddCandidate(ctx context.Context, request SubmitCandid
 	}
 
 	return id, nil
-}
-
-// ValidateCandidateSendingRequest validates data after sending a candidate.
-func (r *SubmitCandidateRequest) ValidateCandidateSendingRequest() error {
-	if len(r.CandidateName) == 0 || len(r.CandidateSurname) == 0 || len(r.FileName) == 0 {
-		return fmt.Errorf("%w: wrong length", ErrInvalidParameter)
-	}
-	fileExp := "([a-zA-Z0-9\\s_\\.\\-\\(\\):])+(.PDF|.pdf)$"
-	isRightFile, _ := regexp.MatchString(fileExp, r.FileName)
-	if !isRightFile {
-		return fmt.Errorf("%w: invalid filename or filetype", ErrInvalidParameter)
-	}
-
-	nameSurnameExp := "(^[A-Za-zА-Яа-я]{2,16})?([ ]{0,1})([A-Za-zА-Яа-я]{2,16})?"
-	isValid, _ := regexp.MatchString(nameSurnameExp, r.CandidateName)
-	if !isValid {
-		return fmt.Errorf("%w: name has invalid format", ErrInvalidParameter)
-	}
-
-	isValid, _ = regexp.MatchString(nameSurnameExp, r.CandidateSurname)
-	if !isValid {
-		return fmt.Errorf("%w: surname has invalid format", ErrInvalidParameter)
-	}
-
-	return nil
 }

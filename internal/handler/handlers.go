@@ -136,8 +136,6 @@ func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 
 // SendCandidate sends candidate info and his cv.
 func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
-	var request service.SubmitCandidateRequest
-
 	file, header, err := r.FormFile(filenameParam)
 	if err != nil {
 		sendResponse(rw, err.Error(), http.StatusBadRequest)
@@ -145,11 +143,13 @@ func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 	}
 	defer file.Close()
 
-	request.FileName = header.Filename
-	request.CandidateName = r.FormValue(candidateNameParam)
-	request.CandidateSurname = r.FormValue(candidateSurnameParam)
+	request := service.SubmitCandidateRequest{
+		FileName:         header.Filename,
+		CandidateName:    r.FormValue(candidateNameParam),
+		CandidateSurname: r.FormValue(candidateSurnameParam),
+	}
 
-	if err := request.ValidateCandidateSendingRequest(); err != nil {
+	if err := ValidateCandidateSendingRequest(request); err != nil {
 		sendResponse(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -298,6 +298,31 @@ func (r *LogInRequest) ValidateLogInRequest() error {
 
 	if r.Password == "" {
 		return fmt.Errorf("%w: password", ErrInvalidParameter)
+	}
+
+	return nil
+}
+
+// ValidateCandidateSendingRequest validates data after sending a candidate.
+func ValidateCandidateSendingRequest(r service.SubmitCandidateRequest) error {
+	if len(r.CandidateName) == 0 || len(r.CandidateSurname) == 0 || len(r.FileName) == 0 {
+		return fmt.Errorf("%w: wrong length", ErrInvalidParameter)
+	}
+	fileExp := "([a-zA-Z0-9\\s_\\.\\-\\(\\):])+(.PDF|.pdf)$"
+	isRightFile, _ := regexp.MatchString(fileExp, r.FileName)
+	if !isRightFile {
+		return fmt.Errorf("%w: invalid filename or filetype", ErrInvalidParameter)
+	}
+
+	nameSurnameExp := "(^[A-Za-zА-Яа-я]{2,16})?([ ]{0,1})([A-Za-zА-Яа-я]{2,16})?"
+	isValid, _ := regexp.MatchString(nameSurnameExp, r.CandidateName)
+	if !isValid {
+		return fmt.Errorf("%w: name has invalid format", ErrInvalidParameter)
+	}
+
+	isValid, _ = regexp.MatchString(nameSurnameExp, r.CandidateSurname)
+	if !isValid {
+		return fmt.Errorf("%w: surname has invalid format", ErrInvalidParameter)
 	}
 
 	return nil
