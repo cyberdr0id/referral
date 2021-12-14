@@ -13,6 +13,12 @@ import (
 
 var currentUserID string
 
+const (
+	filenameParam         = "fileName"
+	candidateNameParam    = "candidateName"
+	candidateSurnameParam = "candidateSurname"
+)
+
 // LogInRequest presents request for login.
 type LogInRequest struct {
 	Name     string `json:"name"`
@@ -23,13 +29,6 @@ type LogInRequest struct {
 type SignUpRequest struct {
 	Name     string `json:"name"`
 	Password string `json:"password"`
-}
-
-// CandidateSendingRequest presents request for sending candidate.
-type CandidateSendingRequest struct {
-	FileName         string
-	CandidateName    string
-	CandidateSurname string
 }
 
 // UserRequestsResponse type presents structure which contains all user requests.
@@ -137,11 +136,7 @@ func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 
 // SendCandidate sends candidate info and his cv.
 func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
-	var request CandidateSendingRequest
-
-	filenameParam := "fileName"
-	candidateNameParam := "candidateName"
-	candidateSurnameParam := "candidateSurname"
+	var request service.SubmitCandidateRequest
 
 	file, header, err := r.FormFile(filenameParam)
 	if err != nil {
@@ -159,10 +154,7 @@ func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: adding file to object storage
-	fileID := "1"
-
-	id, err := s.Referral.AddCandidate(r.Context(), request.CandidateName, request.CandidateSurname, fileID)
+	id, err := s.Referral.AddCandidate(r.Context(), request)
 	if err != nil {
 		sendResponse(rw, err.Error(), http.StatusInternalServerError)
 		return
@@ -275,31 +267,6 @@ func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 		http.Error(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
-}
-
-// ValidateCandidateSendingRequest validates data after sending a candidate.
-func (r *CandidateSendingRequest) ValidateCandidateSendingRequest() error {
-	if len(r.CandidateName) == 0 || len(r.CandidateSurname) == 0 || len(r.FileName) == 0 {
-		return fmt.Errorf("%w: wrong length", ErrInvalidParameter)
-	}
-	fileExp := "([a-zA-Z0-9\\s_\\.\\-\\(\\):])+(.PDF|.pdf)$"
-	isRightFile, _ := regexp.MatchString(fileExp, r.FileName)
-	if !isRightFile {
-		return fmt.Errorf("%w: invalid filename or filetype", ErrInvalidParameter)
-	}
-
-	nameSurnameExp := "(^[A-Za-zА-Яа-я]{2,16})?([ ]{0,1})([A-Za-zА-Яа-я]{2,16})?"
-	isValid, _ := regexp.MatchString(nameSurnameExp, r.CandidateName)
-	if !isValid {
-		return fmt.Errorf("%w: name has invalid format", ErrInvalidParameter)
-	}
-
-	isValid, _ = regexp.MatchString(nameSurnameExp, r.CandidateSurname)
-	if !isValid {
-		return fmt.Errorf("%w: surname has invalid format", ErrInvalidParameter)
-	}
-
-	return nil
 }
 
 // ValidateSignUpRequest validates data after signup.
