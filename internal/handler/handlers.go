@@ -136,7 +136,7 @@ func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 
 // SendCandidate sends candidate info and his cv.
 func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
-	file, header, err := r.FormFile(filenameParam)
+	file, _, err := r.FormFile(filenameParam)
 	if err != nil {
 		sendResponse(rw, err.Error(), http.StatusBadRequest)
 		return
@@ -144,7 +144,7 @@ func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 
 	request := service.SubmitCandidateRequest{
-		FileName:         header.Filename,
+		File:             file,
 		CandidateName:    r.FormValue(candidateNameParam),
 		CandidateSurname: r.FormValue(candidateSurnameParam),
 	}
@@ -305,14 +305,14 @@ func (r *LogInRequest) ValidateLogInRequest() error {
 
 // ValidateCandidateSendingRequest validates data after sending a candidate.
 func ValidateCandidateSendingRequest(r service.SubmitCandidateRequest) error {
-	if len(r.CandidateName) == 0 || len(r.CandidateSurname) == 0 || len(r.FileName) == 0 {
+	if len(r.CandidateName) == 0 || len(r.CandidateSurname) == 0 {
 		return fmt.Errorf("%w: wrong length", ErrInvalidParameter)
 	}
-	fileExp := "([a-zA-Z0-9\\s_\\.\\-\\(\\):])+(.PDF|.pdf)$"
-	isRightFile, _ := regexp.MatchString(fileExp, r.FileName)
-	if !isRightFile {
-		return fmt.Errorf("%w: invalid filename or filetype", ErrInvalidParameter)
-	}
+	// fileExp := "([a-zA-Z0-9\\s_\\.\\-\\(\\):])+(.PDF|.pdf)$"
+	// isRightFile, _ := regexp.MatchString(fileExp, r.FileName)
+	// if !isRightFile {
+	// 	return fmt.Errorf("%w: invalid filename or filetype", ErrInvalidParameter)
+	// }
 
 	nameSurnameExp := "(^[A-Za-zА-Яа-я]{2,16})?([ ]{0,1})([A-Za-zА-Яа-я]{2,16})?"
 	isValid, _ := regexp.MatchString(nameSurnameExp, r.CandidateName)
