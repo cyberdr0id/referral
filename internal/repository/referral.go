@@ -81,8 +81,8 @@ func (r *Repository) UpdateRequest(id, newState string) error {
 func (r *Repository) GetCVID(id string) (string, error) {
 	var fileID string
 
-	query := `SELECT cv_os_file_id
-			  FROM candidates
+	query := `SELECT cv_file_id
+			  FROM requests
 			  WHERE id = $1`
 
 	err := r.db.QueryRow(query, id).Scan(&fileID)
