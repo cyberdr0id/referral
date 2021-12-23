@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -79,4 +80,18 @@ func (s *Storage) DownloadFileFromStorage(fileID string) (io.ReadSeeker, error) 
 	}
 
 	return bytes.NewReader(buf), nil
+}
+
+func (s *Storage) GetFileURLByID(fileID string) (string, error) {
+	req, _ := s.storage.GetObjectRequest(&s3.GetObjectInput{
+		Bucket: aws.String(s.config.Bucket),
+		Key:    aws.String(fileID),
+	})
+
+	url, err := req.Presign(5 * time.Minute)
+	if err != nil {
+		return "", fmt.Errorf("cannot create file URL: %w", err)
+	}
+
+	return url, err
 }
