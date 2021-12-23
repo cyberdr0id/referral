@@ -201,28 +201,22 @@ func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 
 	ok, err := ValidateID(id)
 	if !ok {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
 		return
 	}
 
-	_, err = s.Referral.GetCVID(id)
-	if errors.Is(err, service.ErrNoFile) {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
-		return
-	}
+	link, err := s.Referral.DownloadFile(id)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
 		return
 	}
 
-	// TODO: download id from storage - storage
-
-	if err = json.NewEncoder(rw).Encode(DownloadResponse{FileLink: "example.com/path/to/file.extension"}); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+	if err = json.NewEncoder(rw).Encode(DownloadResponse{FileLink: link}); err != nil {
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
 		return
 	}
 }
