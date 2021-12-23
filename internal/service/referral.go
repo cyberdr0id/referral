@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 	"mime/multipart"
+	"strings"
 
 	mycontext "github.com/cyberdr0id/referral/internal/context"
 	"github.com/cyberdr0id/referral/internal/repository"
 	"github.com/cyberdr0id/referral/internal/storage"
+	"github.com/pborman/uuid"
 )
 
 // ErrInvalidParameter presetns an error when user input invalid parameter.
@@ -42,7 +44,7 @@ func (s *ReferralService) AddCandidate(ctx context.Context, request SubmitCandid
 		return "", fmt.Errorf("cannot get user id from context")
 	}
 
-	fileID := "1"
+	fileID := getUUID()
 
 	err := s.s3.UploadFileToStorage(request.File, fileID)
 	if err != nil {
@@ -55,4 +57,30 @@ func (s *ReferralService) AddCandidate(ctx context.Context, request SubmitCandid
 	}
 
 	return id, nil
+}
+
+func getUUID() string {
+	return strings.Replace(uuid.NewRandom().String(), "-", "", -1)
+}
+
+func (s *ReferralService) GetRequests(id, t string) ([]repository.Request, error) {
+	return nil, nil
+}
+
+func (s *ReferralService) DownloadFile(candidateID string) (string, error) {
+	fileID, err := s.repo.GetCVID(candidateID)
+	if err != nil {
+		return "", fmt.Errorf("cannot get file id from object storage: %w", err)
+	}
+
+	linkToFile, err := s.s3.GetFileURLByID(fileID)
+	if err != nil {
+		return "", fmt.Errorf("cannot download file from object storage: %w", err)
+	}
+
+	return linkToFile, nil
+}
+
+func (s *ReferralService) UpdateRequest(id, status string) error {
+	return nil
 }
