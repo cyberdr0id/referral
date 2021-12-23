@@ -6,6 +6,8 @@ import (
 
 	"github.com/cyberdr0id/referral/internal/handler"
 	"github.com/cyberdr0id/referral/internal/repository"
+	"github.com/cyberdr0id/referral/internal/service"
+	"github.com/cyberdr0id/referral/internal/storage"
 	"github.com/cyberdr0id/referral/pkg/jwt"
 	"github.com/spf13/viper"
 )
@@ -32,7 +34,22 @@ func main() {
 	repo := repository.NewRepository(db)
 	tm := jwt.NewTokenManager(viper.GetString("jwt.key"), viper.GetInt("jwt.expiryTime"))
 
-	srv := handler.NewServer(repo)
+	s3config := &storage.StorageConfig{
+		Bucket:      viper.GetString("aws.bucket"),
+		Region:      viper.GetString("aws.region"),
+		AccessKey:   viper.GetString("aws.accessKey"),
+		AccessKeyID: viper.GetString("aws.accessKeyID"),
+	}
+
+	s3, err := storage.NewStorage(s3config)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	authService := service.NewAuthService(repo, tm)
+	referralService := service.NewReferralService(repo, s3)
+
+	srv := handler.NewServer(authService, referralService)
 
 	if err := srv.Run(viper.GetString("port"), srv); err != nil {
 		log.Fatalf("error while starting server: %s", err.Error())
