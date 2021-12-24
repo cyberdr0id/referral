@@ -144,7 +144,6 @@ func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 
 	request := service.SubmitCandidateRequest{
-		File:             file,
 		CandidateName:    r.FormValue(candidateNameParam),
 		CandidateSurname: r.FormValue(candidateSurnameParam),
 	}
@@ -154,7 +153,7 @@ func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := s.Referral.AddCandidate(r.Context(), request)
+	id, err := s.Referral.AddCandidate(r.Context(), request, file)
 	if err != nil {
 		sendResponse(rw, err.Error(), http.StatusInternalServerError)
 		return

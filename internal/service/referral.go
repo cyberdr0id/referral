@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"mime/multipart"
-	"strings"
 
 	mycontext "github.com/cyberdr0id/referral/internal/context"
 	"github.com/cyberdr0id/referral/internal/repository"
@@ -32,21 +31,20 @@ func NewReferralService(repo *repository.Repository, s3 *storage.Storage) *Refer
 
 // SubmitCandidateRequest presents a type for reading data after submitting a candidate.
 type SubmitCandidateRequest struct {
-	File             multipart.File
 	CandidateName    string
 	CandidateSurname string
 }
 
 // AddCandidate create request with candidate.
-func (s *ReferralService) AddCandidate(ctx context.Context, request SubmitCandidateRequest) (string, error) {
+func (s *ReferralService) AddCandidate(ctx context.Context, request SubmitCandidateRequest, file multipart.File) (string, error) {
 	userID, ok := mycontext.GetUserID(ctx)
 	if !ok {
 		return "", fmt.Errorf("cannot get user id from context")
 	}
 
-	fileID := getUUID()
+	fileID := uuid.NewRandom().String()
 
-	err := s.s3.UploadFileToStorage(request.File, fileID)
+	err := s.s3.UploadFileToStorage(file, fileID)
 	if err != nil {
 		return "", fmt.Errorf("cannot load file to object storage: %w", err)
 	}
@@ -57,10 +55,6 @@ func (s *ReferralService) AddCandidate(ctx context.Context, request SubmitCandid
 	}
 
 	return id, nil
-}
-
-func getUUID() string {
-	return strings.Replace(uuid.NewRandom().String(), "-", "", -1)
 }
 
 func (s *ReferralService) GetRequests(id, t string) ([]repository.Request, error) {
