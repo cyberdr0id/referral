@@ -2,10 +2,8 @@
 package storage
 
 import (
-	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -13,6 +11,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 )
+
+const urlExpireTime = 5 * time.Minute
 
 // Storage presents type for work with object storage.
 type Storage struct {
@@ -30,7 +30,10 @@ type StorageConfig struct {
 
 // NewStorage creates a new inastance of Storage.
 func NewStorage(config *StorageConfig) (*Storage, error) {
-	session, err := startSession(config)
+	session, err := session.NewSession(&aws.Config{
+		Region:      aws.String(config.Region),
+		Credentials: credentials.NewStaticCredentials(config.AccessKeyID, config.AccessKey, ""),
+	})
 	if err != nil {
 		return nil, fmt.Errorf("cannot start session: %w", err)
 	}
@@ -39,14 +42,6 @@ func NewStorage(config *StorageConfig) (*Storage, error) {
 		storage: s3.New(session),
 		config:  config,
 	}, nil
-}
-
-// startSession creates a new storage session.
-func startSession(config *StorageConfig) (*session.Session, error) {
-	return session.NewSession(&aws.Config{
-		Region:      aws.String(config.Region),
-		Credentials: credentials.NewStaticCredentials(config.AccessKeyID, config.AccessKey, ""),
-	})
 }
 
 // UploadFileToStorage uploads file to object storage.
@@ -65,7 +60,7 @@ func (s *Storage) UploadFileToStorage(file io.ReadSeeker, fileID string) error {
 }
 
 // DownloadFileFromStorage downloads file from object storage
-func (s *Storage) DownloadFileFromStorage(fileID string) (io.ReadSeeker, error) {
+func (s *Storage) DownloadFileFromStorage(fileID string) (io.ReadCloser, error) {
 	resp, err := s.storage.GetObject(&s3.GetObjectInput{
 		Bucket: aws.String(s.config.Bucket),
 		Key:    aws.String(fileID),
@@ -74,12 +69,7 @@ func (s *Storage) DownloadFileFromStorage(fileID string) (io.ReadSeeker, error) 
 		return nil, fmt.Errorf("cannot download file: %w", err)
 	}
 
-	buf, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return nil, fmt.Errorf("cannot read downloaded data: %w", err)
-	}
-
-	return bytes.NewReader(buf), nil
+	return resp.Body, nil
 }
 
 func (s *Storage) GetFileURLByID(fileID string) (string, error) {
@@ -88,7 +78,7 @@ func (s *Storage) GetFileURLByID(fileID string) (string, error) {
 		Key:    aws.String(fileID),
 	})
 
-	url, err := req.Presign(5 * time.Minute)
+	url, err := req.Presign(urlExpireTime)
 	if err != nil {
 		return "", fmt.Errorf("cannot create file URL: %w", err)
 	}
