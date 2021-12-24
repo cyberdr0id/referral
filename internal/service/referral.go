@@ -57,8 +57,18 @@ func (s *ReferralService) AddCandidate(ctx context.Context, request SubmitCandid
 	return id, nil
 }
 
-func (s *ReferralService) GetRequests(id, t string) ([]repository.Request, error) {
-	return nil, nil
+func (s *ReferralService) GetRequests(ctx context.Context, t string) ([]repository.UserRequests, error) {
+	userID, ok := mycontext.GetUserID(ctx)
+	if !ok {
+		return nil, fmt.Errorf("cannot get user id from context")
+	}
+
+	requests, err := s.repo.GetRequests(userID, t)
+	if err != nil {
+		return nil, fmt.Errorf("cannot get user requests: %w", err)
+	}
+
+	return requests, nil
 }
 
 func (s *ReferralService) DownloadFile(candidateID string) (string, error) {

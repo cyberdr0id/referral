@@ -5,16 +5,24 @@ import (
 	"errors"
 )
 
+type UserRequests struct {
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	Surname string `json:"surname"`
+	Status  string `json:"status"`
+	Updated string `json:"updated"`
+}
+
 // GetRequests gives user requests by id.
-func (r *Repository) GetRequests(id string, t string) ([]Request, error) {
-	var requests []Request
+func (r *Repository) GetRequests(id string, t string) ([]UserRequests, error) {
+	var requests []UserRequests
 
 	if t == "" {
 		t = "Updated"
 	}
 
-	query := `SELECT id, user_id, candidate_id, status, created, updated 
-			  FROM requests WHERE user_id = $1 
+	query := `SELECT id, candidate_name, candidate_surname, status, updated 
+			  FROM requests WHERE author_id = $1 
 			  ORDER BY $2`
 
 	rows, err := r.db.Query(query, id, t)
@@ -27,10 +35,10 @@ func (r *Repository) GetRequests(id string, t string) ([]Request, error) {
 	defer rows.Close()
 
 	for rows.Next() {
-		request := Request{}
+		request := UserRequests{}
 
-		if err := rows.Scan(&request.ID, &request.UserID, &request.CandidateID,
-			&request.Status, &request.Created, &request.Updated); err != nil {
+		if err := rows.Scan(&request.ID, &request.Name, &request.Surname,
+			&request.Status, &request.Updated); err != nil {
 			return nil, err
 		}
 

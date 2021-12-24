@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/cyberdr0id/referral/internal/repository"
 	"github.com/cyberdr0id/referral/internal/service"
 )
 
@@ -29,11 +28,6 @@ type LogInRequest struct {
 type SignUpRequest struct {
 	Name     string `json:"name"`
 	Password string `json:"password"`
-}
-
-// UserRequestsResponse type presents structure which contains all user requests.
-type UserRequestsResponse struct {
-	Requests []repository.Request `json:"requests"`
 }
 
 // CandidateSendingResponse type presents candidate sending response.
@@ -172,22 +166,22 @@ func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 	t := r.URL.Query().Get("type")
 	ok, err := ValidateRequestState(t)
 	if !ok {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
+		sendResponse(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		sendResponse(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	userRequests, err := s.Referral.GetRequests(currentUserID, t)
+	userRequests, err := s.Referral.GetRequests(r.Context(), t)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		sendResponse(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err := json.NewEncoder(rw).Encode(UserRequestsResponse{Requests: userRequests}); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+	if err := json.NewEncoder(rw).Encode(userRequests); err != nil {
+		sendResponse(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
