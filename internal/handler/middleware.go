@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/cyberdr0id/referral/pkg/context"
+	"github.com/cyberdr0id/referral/internal/context"
 )
 
 const (

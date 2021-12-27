@@ -136,7 +136,7 @@ func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 
 // SendCandidate sends candidate info and his cv.
 func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
-	file, header, err := r.FormFile(filenameParam)
+	file, _, err := r.FormFile(filenameParam)
 	if err != nil {
 		sendResponse(rw, err.Error(), http.StatusBadRequest)
 		return
@@ -144,7 +144,6 @@ func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 
 	request := service.SubmitCandidateRequest{
-		FileName:         header.Filename,
 		CandidateName:    r.FormValue(candidateNameParam),
 		CandidateSurname: r.FormValue(candidateSurnameParam),
 	}
@@ -154,7 +153,7 @@ func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := s.Referral.AddCandidate(r.Context(), request)
+	id, err := s.Referral.AddCandidate(r.Context(), request, file)
 	if err != nil {
 		sendResponse(rw, err.Error(), http.StatusInternalServerError)
 		return
@@ -201,28 +200,22 @@ func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 
 	ok, err := ValidateID(id)
 	if !ok {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
 		return
 	}
 
-	_, err = s.Referral.GetCVID(id)
-	if errors.Is(err, service.ErrNoFile) {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
-		return
-	}
+	link, err := s.Referral.DownloadFile(id)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
 		return
 	}
 
-	// TODO: download id from storage - storage
-
-	if err = json.NewEncoder(rw).Encode(DownloadResponse{FileLink: "example.com/path/to/file.extension"}); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+	if err = json.NewEncoder(rw).Encode(DownloadResponse{FileLink: link}); err != nil {
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
 		return
 	}
 }
@@ -305,14 +298,14 @@ func (r *LogInRequest) ValidateLogInRequest() error {
 
 // ValidateCandidateSendingRequest validates data after sending a candidate.
 func ValidateCandidateSendingRequest(r service.SubmitCandidateRequest) error {
-	if len(r.CandidateName) == 0 || len(r.CandidateSurname) == 0 || len(r.FileName) == 0 {
+	if len(r.CandidateName) == 0 || len(r.CandidateSurname) == 0 {
 		return fmt.Errorf("%w: wrong length", ErrInvalidParameter)
 	}
-	fileExp := "([a-zA-Z0-9\\s_\\.\\-\\(\\):])+(.PDF|.pdf)$"
-	isRightFile, _ := regexp.MatchString(fileExp, r.FileName)
-	if !isRightFile {
-		return fmt.Errorf("%w: invalid filename or filetype", ErrInvalidParameter)
-	}
+	// fileExp := "([a-zA-Z0-9\\s_\\.\\-\\(\\):])+(.PDF|.pdf)$"
+	// isRightFile, _ := regexp.MatchString(fileExp, r.FileName)
+	// if !isRightFile {
+	// 	return fmt.Errorf("%w: invalid filename or filetype", ErrInvalidParameter)
+	// }
 
 	nameSurnameExp := "(^[A-Za-zА-Яа-я]{2,16})?([ ]{0,1})([A-Za-zА-Яа-я]{2,16})?"
 	isValid, _ := regexp.MatchString(nameSurnameExp, r.CandidateName)

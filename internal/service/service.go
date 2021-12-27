@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"mime/multipart"
 
 	"github.com/cyberdr0id/referral/internal/repository"
 	"github.com/dgrijalva/jwt-go"
@@ -29,7 +30,7 @@ type Auth interface {
 // Referral presents a type of CV interaction.
 type Referral interface {
 	GetRequests(id, t string) ([]repository.Request, error)
-	AddCandidate(ctx context.Context, request SubmitCandidateRequest) (string, error)
-	GetCVID(id string) (string, error)
+	AddCandidate(ctx context.Context, request SubmitCandidateRequest, file multipart.File) (string, error)
+	DownloadFile(id string) (string, error)
 	UpdateRequest(id, status string) error
 }
