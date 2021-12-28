@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strings"
 
 	"github.com/cyberdr0id/referral/internal/service"
 )
@@ -295,11 +296,6 @@ func ValidateCandidateSendingRequest(r service.SubmitCandidateRequest) error {
 	if len(r.CandidateName) == 0 || len(r.CandidateSurname) == 0 {
 		return fmt.Errorf("%w: wrong length", ErrInvalidParameter)
 	}
-	// fileExp := "([a-zA-Z0-9\\s_\\.\\-\\(\\):])+(.PDF|.pdf)$"
-	// isRightFile, _ := regexp.MatchString(fileExp, r.FileName)
-	// if !isRightFile {
-	// 	return fmt.Errorf("%w: invalid filename or filetype", ErrInvalidParameter)
-	// }
 
 	nameSurnameExp := "(^[A-Za-zА-Яа-я]{2,16})?([ ]{0,1})([A-Za-zА-Яа-я]{2,16})?"
 	isValid, _ := regexp.MatchString(nameSurnameExp, r.CandidateName)
@@ -315,18 +311,20 @@ func ValidateCandidateSendingRequest(r service.SubmitCandidateRequest) error {
 	return nil
 }
 
+var requestsState = map[string]bool{
+	"accepted":  true,
+	"rejected":  true,
+	"submitted": true,
+	"updated":   true,
+}
+
 // ValidateRequestState validates data for request filtering.
 func ValidateRequestState(state string) (bool, error) {
-	stateExp := "^([Aa]ccepted|[Rr]ejected|[Ss]ubmitted)$"
-	ok, err := regexp.MatchString(stateExp, state)
-	if !ok {
-		return ok, fmt.Errorf("%w: id has bad format", ErrInvalidParameter)
-	}
-	if err != nil {
-		return ok, err
+	if !requestsState[strings.ToLower(state)] {
+		return false, ErrInvalidParameter
 	}
 
-	return ok, nil
+	return true, nil
 }
 
 // ValidateID checks if parameter is number.

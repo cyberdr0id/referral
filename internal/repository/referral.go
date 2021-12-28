@@ -17,10 +17,6 @@ type UserRequests struct {
 func (r *Repository) GetRequests(id string, t string) ([]UserRequests, error) {
 	var requests []UserRequests
 
-	if t == "" {
-		t = "Updated"
-	}
-
 	query := `SELECT id, candidate_name, candidate_surname, status, updated 
 			  FROM requests WHERE author_id = $1 
 			  ORDER BY $2`
