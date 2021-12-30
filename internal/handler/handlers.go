@@ -211,11 +211,13 @@ func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// UpdateRequest type presents data for request update.
 type UpdateRequest struct {
 	ID        string `json:"id"`
 	NewStatus string `json:"status"`
 }
 
+// UpdateResponse prsents type with info about request update.
 type UpdateRespone struct {
 	Message string `json:"message"`
 }
