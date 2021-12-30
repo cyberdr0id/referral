@@ -51,11 +51,6 @@ type SignUpResponse struct {
 	ID string `json:"id"`
 }
 
-// UpdateCandidateResponse type presents message about success of updating.
-type UpdateCandidateResponse struct {
-	Message string `json:"message"`
-}
-
 // ErrorResponse presents a custom error type.
 type ErrorResponse struct {
 	Message string `json:"error"`
@@ -216,44 +211,39 @@ func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 	}
 }
 
+type UpdateRequest struct {
+	ID        string `json:"id"`
+	NewStatus string `json:"status"`
+}
+
+type UpdateRespone struct {
+	Message string `json:"message"`
+}
+
 // UpdateRequest updated status of request by id.
 func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Content-Type", "application/json")
 
-	state := r.URL.Query().Get("state")
-	ok, err := ValidateRequestState(state)
-	if !ok {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	var request UpdateRequest
 
-	requestID := r.URL.Query().Get("id")
-	ok, err = ValidateID(requestID)
-	if !ok {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	defer r.Body.Close()
 
-	err = s.Referral.UpdateRequest(requestID, state)
+	err := s.Referral.UpdateRequest(request.ID, request.NewStatus)
 	if errors.Is(err, service.ErrNoResult) {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
 		return
 	}
 
-	if err = json.NewEncoder(rw).Encode(UpdateCandidateResponse{Message: "request update was successful"}); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+	if err = json.NewEncoder(rw).Encode(UpdateRespone{Message: fmt.Sprintf("request status updated to '%s'", request.NewStatus)}); err != nil {
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
 		return
 	}
 }

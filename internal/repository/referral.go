@@ -74,16 +74,13 @@ func (r *Repository) UpdateRequest(id, newState string) error {
 			  WHERE id = $2;`
 
 	rows, err := r.db.Exec(query, newState, id)
-	if err != nil {
-		return err
-	}
 
-	n, err := rows.RowsAffected()
-	if err != nil {
-		return err
-	}
+	n, _ := rows.RowsAffected()
 	if n == 0 {
 		return ErrNoResult
+	}
+	if err != nil {
+		return err
 	}
 
 	return nil
