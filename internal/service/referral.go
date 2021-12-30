@@ -92,7 +92,7 @@ func (s *ReferralService) DownloadFile(candidateID string) (string, error) {
 func (s *ReferralService) UpdateRequest(id, status string) error {
 	err := s.repo.UpdateRequest(id, status)
 	if errors.Is(err, repository.ErrNoResult) {
-		return err
+		return ErrNoResult
 	}
 	if err != nil {
 		return fmt.Errorf("cannot update user request: %w", err)
