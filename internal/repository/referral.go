@@ -3,38 +3,50 @@ package repository
 import (
 	"database/sql"
 	"errors"
+	"fmt"
 )
 
+// UserRequests presents a type for user requests data.
+type UserRequests struct {
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	Surname string `json:"surname"`
+	Status  string `json:"status"`
+	Updated string `json:"updated"`
+}
+
 // GetRequests gives user requests by id.
-func (r *Repository) GetRequests(id string, t string) ([]Request, error) {
-	var requests []Request
+func (r *Repository) GetRequests(id string, status string) ([]UserRequests, error) {
+	var requests []UserRequests
+	var query string
 
-	if t == "" {
-		t = "Updated"
+	if status == "" {
+		query = fmt.Sprintf(`SELECT id, candidate_name, candidate_surname, status, updated 
+				 FROM requests WHERE author_id = %s`, id)
+	} else {
+		query = fmt.Sprintf(`SELECT id, candidate_name, candidate_surname, status, updated 
+				 FROM requests WHERE author_id = %s AND requests.status = '%s'`, id, status)
 	}
 
-	query := `SELECT id, user_id, candidate_id, status, created, updated 
-			  FROM requests WHERE user_id = $1 
-			  ORDER BY $2`
-
-	rows, err := r.db.Query(query, id, t)
+	rows, err := r.db.Query(query)
 	if err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error with query executing: %w", err)
 	}
 	defer rows.Close()
 
 	for rows.Next() {
-		request := Request{}
+		request := UserRequests{}
 
-		if err := rows.Scan(&request.ID, &request.UserID, &request.CandidateID,
-			&request.Status, &request.Created, &request.Updated); err != nil {
+		if err := rows.Scan(&request.ID, &request.Name, &request.Surname,
+			&request.Status, &request.Updated); err != nil {
 			return nil, err
 		}
 
 		requests = append(requests, request)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error with result set: %w", err)
 	}
 
 	return requests, nil

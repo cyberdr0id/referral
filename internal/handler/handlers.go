@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strings"
 
-	"github.com/cyberdr0id/referral/internal/repository"
 	"github.com/cyberdr0id/referral/internal/service"
 )
 
@@ -29,11 +29,6 @@ type LogInRequest struct {
 type SignUpRequest struct {
 	Name     string `json:"name"`
 	Password string `json:"password"`
-}
-
-// UserRequestsResponse type presents structure which contains all user requests.
-type UserRequestsResponse struct {
-	Requests []repository.Request `json:"requests"`
 }
 
 // CandidateSendingResponse type presents candidate sending response.
@@ -144,6 +139,7 @@ func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 	defer file.Close()
 
 	request := service.SubmitCandidateRequest{
+		File:             file,
 		CandidateName:    r.FormValue(candidateNameParam),
 		CandidateSurname: r.FormValue(candidateSurnameParam),
 	}
@@ -153,7 +149,7 @@ func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := s.Referral.AddCandidate(r.Context(), request, file)
+	id, err := s.Referral.AddCandidate(r.Context(), request)
 	if err != nil {
 		sendResponse(rw, err.Error(), http.StatusInternalServerError)
 		return
@@ -172,22 +168,22 @@ func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 	t := r.URL.Query().Get("type")
 	ok, err := ValidateRequestState(t)
 	if !ok {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
+		sendResponse(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		sendResponse(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	userRequests, err := s.Referral.GetRequests(currentUserID, t)
+	userRequests, err := s.Referral.GetRequests(r.Context(), t)
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		sendResponse(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
-	if err := json.NewEncoder(rw).Encode(UserRequestsResponse{Requests: userRequests}); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+	if err := json.NewEncoder(rw).Encode(userRequests); err != nil {
+		sendResponse(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 }
@@ -301,11 +297,6 @@ func ValidateCandidateSendingRequest(r service.SubmitCandidateRequest) error {
 	if len(r.CandidateName) == 0 || len(r.CandidateSurname) == 0 {
 		return fmt.Errorf("%w: wrong length", ErrInvalidParameter)
 	}
-	// fileExp := "([a-zA-Z0-9\\s_\\.\\-\\(\\):])+(.PDF|.pdf)$"
-	// isRightFile, _ := regexp.MatchString(fileExp, r.FileName)
-	// if !isRightFile {
-	// 	return fmt.Errorf("%w: invalid filename or filetype", ErrInvalidParameter)
-	// }
 
 	nameSurnameExp := "(^[A-Za-zА-Яа-я]{2,16})?([ ]{0,1})([A-Za-zА-Яа-я]{2,16})?"
 	isValid, _ := regexp.MatchString(nameSurnameExp, r.CandidateName)
@@ -321,18 +312,20 @@ func ValidateCandidateSendingRequest(r service.SubmitCandidateRequest) error {
 	return nil
 }
 
+var requestsState = map[string]bool{
+	"accepted":  true,
+	"rejected":  true,
+	"submitted": true,
+	"":          true,
+}
+
 // ValidateRequestState validates data for request filtering.
 func ValidateRequestState(state string) (bool, error) {
-	stateExp := "^([Aa]ccepted|[Rr]ejected|[Ss]ubmitted)$"
-	ok, err := regexp.MatchString(stateExp, state)
-	if !ok {
-		return ok, fmt.Errorf("%w: id has bad format", ErrInvalidParameter)
-	}
-	if err != nil {
-		return ok, err
+	if !requestsState[strings.ToLower(state)] {
+		return false, ErrInvalidParameter
 	}
 
-	return ok, nil
+	return true, nil
 }
 
 // ValidateID checks if parameter is number.
