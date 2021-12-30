@@ -72,6 +72,7 @@ func (s *Storage) DownloadFileFromStorage(fileID string) (io.ReadCloser, error) 
 	return resp.Body, nil
 }
 
+// GetFileURLByID returns file URL by it ID.
 func (s *Storage) GetFileURLByID(fileID string) (string, error) {
 	req, _ := s.storage.GetObjectRequest(&s3.GetObjectInput{
 		Bucket: aws.String(s.config.Bucket),

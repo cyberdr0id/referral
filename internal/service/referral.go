@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"mime/multipart"
+	"io"
 
 	mycontext "github.com/cyberdr0id/referral/internal/context"
 	"github.com/cyberdr0id/referral/internal/repository"
@@ -31,12 +31,13 @@ func NewReferralService(repo *repository.Repository, s3 *storage.Storage) *Refer
 
 // SubmitCandidateRequest presents a type for reading data after submitting a candidate.
 type SubmitCandidateRequest struct {
+	File             io.ReadSeeker
 	CandidateName    string
 	CandidateSurname string
 }
 
 // AddCandidate create request with candidate.
-func (s *ReferralService) AddCandidate(ctx context.Context, request SubmitCandidateRequest, file multipart.File) (string, error) {
+func (s *ReferralService) AddCandidate(ctx context.Context, request SubmitCandidateRequest) (string, error) {
 	userID, ok := mycontext.GetUserID(ctx)
 	if !ok {
 		return "", fmt.Errorf("cannot get user id from context")
@@ -44,7 +45,7 @@ func (s *ReferralService) AddCandidate(ctx context.Context, request SubmitCandid
 
 	fileID := uuid.NewRandom().String()
 
-	err := s.s3.UploadFileToStorage(file, fileID)
+	err := s.s3.UploadFileToStorage(request.File, fileID)
 	if err != nil {
 		return "", fmt.Errorf("cannot load file to object storage: %w", err)
 	}
@@ -57,13 +58,14 @@ func (s *ReferralService) AddCandidate(ctx context.Context, request SubmitCandid
 	return id, nil
 }
 
-func (s *ReferralService) GetRequests(ctx context.Context, t string) ([]repository.UserRequests, error) {
+// GetRequests returns user requests.
+func (s *ReferralService) GetRequests(ctx context.Context, status string) ([]repository.UserRequests, error) {
 	userID, ok := mycontext.GetUserID(ctx)
 	if !ok {
 		return nil, fmt.Errorf("cannot get user id from context")
 	}
 
-	requests, err := s.repo.GetRequests(userID, t)
+	requests, err := s.repo.GetRequests(userID, status)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get user requests: %w", err)
 	}
@@ -71,6 +73,7 @@ func (s *ReferralService) GetRequests(ctx context.Context, t string) ([]reposito
 	return requests, nil
 }
 
+// DownloadFile downloads file from object storage.
 func (s *ReferralService) DownloadFile(candidateID string) (string, error) {
 	fileID, err := s.repo.GetCVID(candidateID)
 	if err != nil {
@@ -85,6 +88,7 @@ func (s *ReferralService) DownloadFile(candidateID string) (string, error) {
 	return linkToFile, nil
 }
 
+// UpdateRequest updates request's status.
 func (s *ReferralService) UpdateRequest(id, status string) error {
 	return nil
 }
