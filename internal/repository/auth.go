@@ -55,7 +55,7 @@ func (r *Repository) GetUser(name string) (User, error) {
 		return User{}, ErrNoUser
 	}
 	if err != nil {
-		return User{}, err
+		return User{}, fmt.Errorf("cannot get user from database: %w", err)
 	}
 
 	return user, nil

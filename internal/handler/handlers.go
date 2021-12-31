@@ -17,6 +17,8 @@ const (
 	filenameParam         = "fileName"
 	candidateNameParam    = "candidateName"
 	candidateSurnameParam = "candidateSurname"
+	typeParameter         = "type"
+	idParameter           = "id"
 )
 
 // LogInRequest presents request for login.
@@ -49,11 +51,6 @@ type LogInResponse struct {
 // SignUpResponse type presents structure of the sign up response.
 type SignUpResponse struct {
 	ID string `json:"id"`
-}
-
-// UpdateCandidateResponse type presents message about success of updating.
-type UpdateCandidateResponse struct {
-	Message string `json:"message"`
 }
 
 // ErrorResponse presents a custom error type.
@@ -155,24 +152,17 @@ func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := json.NewEncoder(rw).Encode(CandidateSendingResponse{CandidateID: id}); err != nil {
-		sendResponse(rw, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	sendResponse(rw, CandidateSendingResponse{CandidateID: id}, http.StatusOK)
 }
 
 // GetRequests inputs all user requests.
 func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Content-Type", "application/json")
 
-	t := r.URL.Query().Get("type")
-	ok, err := ValidateRequestState(t)
-	if !ok {
+	t := r.URL.Query().Get(typeParameter)
+
+	if err := ValidateRequestState(t); err != nil {
 		sendResponse(rw, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if err != nil {
-		sendResponse(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -182,17 +172,14 @@ func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := json.NewEncoder(rw).Encode(userRequests); err != nil {
-		sendResponse(rw, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	sendResponse(rw, userRequests, http.StatusOK)
 }
 
 // DownloadCV downloads CV of a particular candidate.
 func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Content-Type", "application/json")
 
-	id := r.URL.Query().Get("id")
+	id := r.URL.Query().Get(idParameter)
 
 	ok, err := ValidateID(id)
 	if !ok {
@@ -210,52 +197,58 @@ func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = json.NewEncoder(rw).Encode(DownloadResponse{FileLink: link}); err != nil {
-		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
-		return
-	}
+	sendResponse(rw, DownloadResponse{FileLink: link}, http.StatusOK)
+}
+
+// UpdateRequest type presents data for request update.
+type UpdateRequest struct {
+	ID        string `json:"id"`
+	NewStatus string `json:"status"`
+}
+
+// UpdateResponse prsents type with info about request update.
+type UpdateRespone struct {
+	Message string `json:"message"`
 }
 
 // UpdateRequest updated status of request by id.
 func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Content-Type", "application/json")
 
-	state := r.URL.Query().Get("state")
-	ok, err := ValidateRequestState(state)
-	if !ok {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
+	var request UpdateRequest
+
+	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
-	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+	defer r.Body.Close()
+
+	if err := ValidateRequestState(request.NewStatus); err != nil {
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
 
-	requestID := r.URL.Query().Get("id")
-	ok, err = ValidateID(requestID)
+	ok, err := ValidateID(request.ID)
 	if !ok {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
 		return
 	}
 
-	err = s.Referral.UpdateRequest(requestID, state)
+	err = s.Referral.UpdateRequest(request.ID, request.NewStatus)
 	if errors.Is(err, service.ErrNoResult) {
-		http.Error(rw, err.Error(), http.StatusBadRequest)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
 	if err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
 		return
 	}
 
-	if err = json.NewEncoder(rw).Encode(UpdateCandidateResponse{Message: "request update was successful"}); err != nil {
-		http.Error(rw, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	sendResponse(rw, UpdateRespone{Message: fmt.Sprintf("request status updated to '%s'", request.NewStatus)}, http.StatusOK)
 }
 
 // ValidateSignUpRequest validates data after signup.
@@ -320,12 +313,12 @@ var requestsState = map[string]bool{
 }
 
 // ValidateRequestState validates data for request filtering.
-func ValidateRequestState(state string) (bool, error) {
+func ValidateRequestState(state string) error {
 	if !requestsState[strings.ToLower(state)] {
-		return false, ErrInvalidParameter
+		return fmt.Errorf("%w: request state", ErrInvalidParameter)
 	}
 
-	return true, nil
+	return nil
 }
 
 // ValidateID checks if parameter is number.
@@ -336,7 +329,7 @@ func ValidateID(id string) (bool, error) {
 		return ok, fmt.Errorf("%w: id has bad format", ErrInvalidParameter)
 	}
 	if err != nil {
-		return ok, err
+		return ok, fmt.Errorf("cannot validate user ID: %w", err)
 	}
 
 	return ok, nil
