@@ -17,6 +17,8 @@ const (
 	filenameParam         = "fileName"
 	candidateNameParam    = "candidateName"
 	candidateSurnameParam = "candidateSurname"
+	typeParameter         = "type"
+	idParameter           = "id"
 )
 
 // LogInRequest presents request for login.
@@ -150,24 +152,17 @@ func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := json.NewEncoder(rw).Encode(CandidateSendingResponse{CandidateID: id}); err != nil {
-		sendResponse(rw, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	sendResponse(rw, CandidateSendingResponse{CandidateID: id}, http.StatusOK)
 }
 
 // GetRequests inputs all user requests.
 func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Content-Type", "application/json")
 
-	t := r.URL.Query().Get("type")
-	ok, err := ValidateRequestState(t)
-	if !ok {
+	t := r.URL.Query().Get(typeParameter)
+
+	if err := ValidateRequestState(t); err != nil {
 		sendResponse(rw, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if err != nil {
-		sendResponse(rw, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -177,17 +172,14 @@ func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := json.NewEncoder(rw).Encode(userRequests); err != nil {
-		sendResponse(rw, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	sendResponse(rw, userRequests, http.StatusOK)
 }
 
 // DownloadCV downloads CV of a particular candidate.
 func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Content-Type", "application/json")
 
-	id := r.URL.Query().Get("id")
+	id := r.URL.Query().Get(idParameter)
 
 	ok, err := ValidateID(id)
 	if !ok {
@@ -205,10 +197,7 @@ func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = json.NewEncoder(rw).Encode(DownloadResponse{FileLink: link}); err != nil {
-		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
-		return
-	}
+	sendResponse(rw, DownloadResponse{FileLink: link}, http.StatusOK)
 }
 
 // UpdateRequest type presents data for request update.
@@ -234,7 +223,22 @@ func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	err := s.Referral.UpdateRequest(request.ID, request.NewStatus)
+	if err := ValidateRequestState(request.NewStatus); err != nil {
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
+		return
+	}
+
+	ok, err := ValidateID(request.ID)
+	if !ok {
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
+		return
+	}
+	if err != nil {
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
+		return
+	}
+
+	err = s.Referral.UpdateRequest(request.ID, request.NewStatus)
 	if errors.Is(err, service.ErrNoResult) {
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
@@ -244,10 +248,7 @@ func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = json.NewEncoder(rw).Encode(UpdateRespone{Message: fmt.Sprintf("request status updated to '%s'", request.NewStatus)}); err != nil {
-		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
-		return
-	}
+	sendResponse(rw, UpdateRespone{Message: fmt.Sprintf("request status updated to '%s'", request.NewStatus)}, http.StatusOK)
 }
 
 // ValidateSignUpRequest validates data after signup.
@@ -312,12 +313,12 @@ var requestsState = map[string]bool{
 }
 
 // ValidateRequestState validates data for request filtering.
-func ValidateRequestState(state string) (bool, error) {
+func ValidateRequestState(state string) error {
 	if !requestsState[strings.ToLower(state)] {
-		return false, ErrInvalidParameter
+		return fmt.Errorf("%w: request state", ErrInvalidParameter)
 	}
 
-	return true, nil
+	return nil
 }
 
 // ValidateID checks if parameter is number.
@@ -328,7 +329,7 @@ func ValidateID(id string) (bool, error) {
 		return ok, fmt.Errorf("%w: id has bad format", ErrInvalidParameter)
 	}
 	if err != nil {
-		return ok, err
+		return ok, fmt.Errorf("cannot validate user ID: %w", err)
 	}
 
 	return ok, nil
