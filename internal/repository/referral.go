@@ -39,7 +39,7 @@ func (r *Repository) GetRequests(id string, status string) ([]UserRequests, erro
 
 		if err := rows.Scan(&request.ID, &request.Name, &request.Surname,
 			&request.Status, &request.Updated); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("cannot get requests information: %w", err)
 		}
 
 		requests = append(requests, request)
@@ -61,7 +61,7 @@ func (r *Repository) AddCandidate(userID, name, surname, fileID string) (string,
 
 	err := r.db.QueryRow(query, userID, name, surname, fileID).Scan(&requestID)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("cannot add candidate to database: %w", err)
 	}
 
 	return requestID, nil
@@ -80,7 +80,7 @@ func (r *Repository) UpdateRequest(id, newState string) error {
 		return ErrNoResult
 	}
 	if err != nil {
-		return err
+		return fmt.Errorf("cannot update user request: %w", err)
 	}
 
 	return nil
@@ -99,7 +99,7 @@ func (r *Repository) GetCVID(id string) (string, error) {
 		return "", ErrNoFile
 	}
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("cannot get cv id from database: %w", err)
 	}
 
 	return fileID, nil
