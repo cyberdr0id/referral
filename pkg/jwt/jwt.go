@@ -40,8 +40,8 @@ func (t *TokenManager) GenerateToken(userID string, isAdmin bool) (string, error
 }
 
 // ParseToken gets the user claims from JWT token.
-func (t *TokenManager) ParseToken(_token string) (*jwt.StandardClaims, error) {
-	token, err := jwt.ParseWithClaims(_token, &jwt.StandardClaims{}, func(token *jwt.Token) (i interface{}, err error) {
+func (t *TokenManager) ParseToken(_token string) (*Claims, error) {
+	token, err := jwt.ParseWithClaims(_token, &Claims{}, func(token *jwt.Token) (i interface{}, err error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("invalid signing method")
 		}
@@ -52,7 +52,7 @@ func (t *TokenManager) ParseToken(_token string) (*jwt.StandardClaims, error) {
 		return nil, fmt.Errorf("cannot parse token: %w", err)
 	}
 
-	claims, ok := token.Claims.(*jwt.StandardClaims)
+	claims, ok := token.Claims.(*Claims)
 	if !ok {
 		return nil, fmt.Errorf("cannot get claims from token")
 	}

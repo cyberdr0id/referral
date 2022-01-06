@@ -7,7 +7,6 @@ import (
 	"github.com/cyberdr0id/referral/internal/repository"
 	"github.com/cyberdr0id/referral/pkg/hash"
 	"github.com/cyberdr0id/referral/pkg/jwt"
-	jwtgo "github.com/dgrijalva/jwt-go"
 )
 
 // AuthService present a service for authorization service.
@@ -25,7 +24,7 @@ func NewAuthService(repo *repository.Repository, tm *jwt.TokenManager) *AuthServ
 }
 
 // ParseToken references to TokenManager for token parsing
-func (s *AuthService) ParseToken(token string) (*jwtgo.StandardClaims, error) {
+func (s *AuthService) ParseToken(token string) (*jwt.Claims, error) {
 	return s.tokenManager.ParseToken(token)
 }
 
