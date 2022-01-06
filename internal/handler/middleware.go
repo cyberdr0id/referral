@@ -24,7 +24,11 @@ func (s *Server) AdminMiddleware(nextHandler http.Handler) http.Handler {
 		headerValue := r.Header.Get(authHeaderKey)
 		token := strings.Split(headerValue, " ")[1]
 		claims, err := s.Auth.ParseToken(token)
-		if !claims.IsAdmin || err != nil {
+		if err != nil {
+			sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
+			return
+		}
+		if !claims.IsAdmin {
 			sendResponse(rw, ErrorResponse{Message: permissionRequired}, http.StatusForbidden)
 			return
 		}
