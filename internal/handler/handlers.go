@@ -11,8 +11,6 @@ import (
 	"github.com/cyberdr0id/referral/internal/service"
 )
 
-var currentUserID string
-
 const (
 	filenameParam         = "fileName"
 	candidateNameParam    = "candidateName"

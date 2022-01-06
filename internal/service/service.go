@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/cyberdr0id/referral/internal/repository"
-	"github.com/dgrijalva/jwt-go"
+	myjwt "github.com/cyberdr0id/referral/pkg/jwt"
 )
 
 var (
@@ -23,7 +23,7 @@ var (
 type Auth interface {
 	LogIn(name, password string) (string, error)
 	SignUp(name, password string) (string, error)
-	ParseToken(_token string) (*jwt.StandardClaims, error)
+	ParseToken(_token string) (*myjwt.Claims, error)
 }
 
 // Referral presents a type of CV interaction.

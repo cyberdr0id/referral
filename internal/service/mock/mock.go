@@ -8,7 +8,7 @@ import (
 	reflect "reflect"
 
 	repository "github.com/cyberdr0id/referral/internal/repository"
-	jwt "github.com/dgrijalva/jwt-go"
+	myjwt "github.com/cyberdr0id/referral/pkg/jwt"
 	gomock "github.com/golang/mock/gomock"
 )
 
@@ -51,10 +51,10 @@ func (mr *MockAuthMockRecorder) LogIn(name, password interface{}) *gomock.Call {
 }
 
 // ParseToken mocks base method.
-func (m *MockAuth) ParseToken(_token string) (*jwt.StandardClaims, error) {
+func (m *MockAuth) ParseToken(_token string) (*myjwt.Claims, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ParseToken", _token)
-	ret0, _ := ret[0].(*jwt.StandardClaims)
+	ret0, _ := ret[0].(*myjwt.Claims)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
