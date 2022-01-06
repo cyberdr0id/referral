@@ -20,12 +20,18 @@ func (r *Repository) GetRequests(id string, status string) ([]UserRequests, erro
 	var requests []UserRequests
 	var query string
 
-	if status == "" {
-		query = fmt.Sprintf(`SELECT id, candidate_name, candidate_surname, status, updated 
-				 FROM requests WHERE author_id = %s`, id)
+	user, _ := r.GetUser(id)
+
+	if user.IsAdmin {
+		query = "SELECT id, candidate_name, candidate_surname, status, updated FROM requests"
 	} else {
-		query = fmt.Sprintf(`SELECT id, candidate_name, candidate_surname, status, updated 
-				 FROM requests WHERE author_id = %s AND requests.status = '%s'`, id, status)
+		if status == "" {
+			query = fmt.Sprintf(`SELECT id, candidate_name, candidate_surname, status, updated 
+					 FROM requests WHERE author_id = %s`, id)
+		} else {
+			query = fmt.Sprintf(`SELECT id, candidate_name, candidate_surname, status, updated 
+					 FROM requests WHERE author_id = %s AND requests.status = '%s'`, id, status)
+		}
 	}
 
 	rows, err := r.db.Query(query)
