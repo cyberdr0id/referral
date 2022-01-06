@@ -11,6 +11,10 @@ func (s *Server) InitRoutes() {
 
 	sr.HandleFunc("/references", s.SendCandidate).Methods("POST") // sending candidate
 	sr.HandleFunc("/references", s.GetRequests).Methods("GET")    // user request history
-	sr.HandleFunc("/references", s.UpdateRequest).Methods("PUT")  // user request history
-	sr.HandleFunc("/cvs", s.DownloadCV).Methods("GET")            // loading cv
+
+	adminRouter := sr.NewRoute().Subrouter()
+	adminRouter.Use(s.AdminMiddleware)
+
+	adminRouter.HandleFunc("/references", s.UpdateRequest).Methods("PUT") // user request history
+	adminRouter.HandleFunc("/cvs", s.DownloadCV).Methods("GET")           // loading cv
 }
