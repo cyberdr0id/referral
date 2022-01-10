@@ -216,7 +216,7 @@ type UpdateRequest struct {
 	NewStatus string `json:"status"`
 }
 
-// UpdateResponse prsents type with info about request update.
+// UpdateRespone prsents type with info about request update.
 type UpdateRespone struct {
 	Message string `json:"message"`
 }
@@ -331,7 +331,7 @@ func ValidateRequestState(state string) error {
 	return nil
 }
 
-// ValidateID checks if parameter is number.
+// ValidateNumber checks if parameter is number.
 func ValidateNumber(id string) (bool, error) {
 	idExp := "^[1-9]\\d*"
 	ok, err := regexp.MatchString(idExp, id)
