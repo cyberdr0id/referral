@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS Requests
 	author_id INTEGER NOT NULL,
 	candidate_name VARCHAR NOT NULL,
 	candidate_surname VARCHAR NOT NULL,
-	cv_file_id INTEGER NOT NULL,
+	cv_file_id VARCHAR NOT NULL,
 	status VARCHAR CHECK (
 		Status = 'Accepted' OR
 		Status = 'Rejected' OR
