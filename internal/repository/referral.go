@@ -16,6 +16,10 @@ type UserRequests struct {
 	Updated string `json:"updated"`
 }
 
+const (
+	itemsCount = 10
+)
+
 // GetRequests gives user requests by id.
 func (r *Repository) GetRequests(id, status, pageNumber string) ([]UserRequests, error) {
 	var requests []UserRequests
@@ -26,7 +30,7 @@ func (r *Repository) GetRequests(id, status, pageNumber string) ([]UserRequests,
 		return nil, fmt.Errorf("cannot convert page number to integer: %w", err)
 	}
 
-	offset := (pageNumberInt - 1) * 10
+	offset := (pageNumberInt - 1) * itemsCount
 
 	if status == "" {
 		query = fmt.Sprintf(`
@@ -35,9 +39,9 @@ func (r *Repository) GetRequests(id, status, pageNumber string) ([]UserRequests,
 				FROM 
 					requests 
 				WHERE author_id = %s
-				LIMIT 10
+				LIMIT %d
 				OFFSET %d
-				`, id, offset)
+				`, id, itemsCount, offset)
 	} else {
 		query = fmt.Sprintf(`
 				SELECT 
@@ -46,9 +50,9 @@ func (r *Repository) GetRequests(id, status, pageNumber string) ([]UserRequests,
 					requests 
 				WHERE 
 					author_id = %s AND requests.status = '%s'
-				LIMIT 10
+				LIMIT %d
 				OFFSET %d
-				`, id, status, offset)
+				`, id, status, itemsCount, offset)
 	}
 
 	rows, err := r.db.Query(query)
