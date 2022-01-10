@@ -17,6 +17,7 @@ const (
 	candidateSurnameParam = "candidateSurname"
 	typeParameter         = "type"
 	idParameter           = "id"
+	pageParameter         = "page"
 )
 
 // LogInRequest presents request for login.
@@ -158,13 +159,24 @@ func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Content-Type", "application/json")
 
 	t := r.URL.Query().Get(typeParameter)
+	pageNumber := r.URL.Query().Get(pageParameter)
+
+	ok, err := ValidateNumber(pageNumber)
+	if !ok {
+		sendResponse(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+	if err != nil {
+		sendResponse(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
 
 	if err := ValidateRequestState(t); err != nil {
 		sendResponse(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	userRequests, err := s.Referral.GetRequests(r.Context(), t)
+	userRequests, err := s.Referral.GetRequests(r.Context(), t, pageNumber)
 	if err != nil {
 		sendResponse(rw, err.Error(), http.StatusInternalServerError)
 		return
@@ -179,7 +191,7 @@ func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 
 	id := r.URL.Query().Get(idParameter)
 
-	ok, err := ValidateID(id)
+	ok, err := ValidateNumber(id)
 	if !ok {
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
@@ -226,7 +238,7 @@ func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ok, err := ValidateID(request.ID)
+	ok, err := ValidateNumber(request.ID)
 	if !ok {
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
@@ -320,14 +332,14 @@ func ValidateRequestState(state string) error {
 }
 
 // ValidateID checks if parameter is number.
-func ValidateID(id string) (bool, error) {
+func ValidateNumber(id string) (bool, error) {
 	idExp := "^[1-9]\\d*"
 	ok, err := regexp.MatchString(idExp, id)
 	if !ok {
-		return ok, fmt.Errorf("%w: id has bad format", ErrInvalidParameter)
+		return ok, fmt.Errorf("%w: numeric parameter has bad format", ErrInvalidParameter)
 	}
 	if err != nil {
-		return ok, fmt.Errorf("cannot validate user ID: %w", err)
+		return ok, fmt.Errorf("cannot validate input parameter: %w", err)
 	}
 
 	return ok, nil
