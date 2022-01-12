@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"strconv"
 
 	mycontext "github.com/cyberdr0id/referral/internal/context"
 	"github.com/cyberdr0id/referral/internal/repository"
@@ -59,13 +60,23 @@ func (s *ReferralService) AddCandidate(ctx context.Context, request SubmitCandid
 }
 
 // GetRequests returns user requests.
-func (s *ReferralService) GetRequests(ctx context.Context, status, pageNumber string) ([]repository.UserRequests, error) {
+func (s *ReferralService) GetRequests(ctx context.Context, status, pageNumber, pageSize string) ([]repository.UserRequests, error) {
 	userID, ok := mycontext.GetUserID(ctx)
 	if !ok {
 		return nil, fmt.Errorf("cannot get user id from context")
 	}
 
-	requests, err := s.repo.GetRequests(userID, status, pageNumber)
+	pageNumberInt, err := strconv.Atoi(pageNumber)
+	if err != nil {
+		return nil, fmt.Errorf("cannot convert page number to integer: %w", err)
+	}
+
+	pageSizeInt, err := strconv.Atoi(pageSize)
+	if err != nil {
+		return nil, fmt.Errorf("cannot convert page size to integer: %w", err)
+	}
+
+	requests, err := s.repo.GetRequests(userID, status, pageNumberInt, pageSizeInt)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get user requests: %w", err)
 	}

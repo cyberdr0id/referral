@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"strconv"
 )
 
 // UserRequests presents a type for user requests data.
@@ -16,21 +15,12 @@ type UserRequests struct {
 	Updated string `json:"updated"`
 }
 
-const (
-	itemsCount = 10
-)
-
 // GetRequests gives user requests by id.
-func (r *Repository) GetRequests(id, status, pageNumber string) ([]UserRequests, error) {
+func (r *Repository) GetRequests(id, status string, pageNumber, pageSize int) ([]UserRequests, error) {
 	var requests []UserRequests
 	var query string
 
-	pageNumberInt, err := strconv.Atoi(pageNumber)
-	if err != nil {
-		return nil, fmt.Errorf("cannot convert page number to integer: %w", err)
-	}
-
-	offset := (pageNumberInt - 1) * itemsCount
+	offset := (pageNumber - 1) * pageSize
 
 	if status == "" {
 		query = fmt.Sprintf(`
@@ -41,7 +31,7 @@ func (r *Repository) GetRequests(id, status, pageNumber string) ([]UserRequests,
 				WHERE author_id = %s
 				LIMIT %d
 				OFFSET %d
-				`, id, itemsCount, offset)
+				`, id, pageSize, offset)
 	} else {
 		query = fmt.Sprintf(`
 				SELECT 
@@ -52,7 +42,7 @@ func (r *Repository) GetRequests(id, status, pageNumber string) ([]UserRequests,
 					author_id = %s AND requests.status = '%s'
 				LIMIT %d
 				OFFSET %d
-				`, id, status, itemsCount, offset)
+				`, id, status, pageSize, offset)
 	}
 
 	rows, err := r.db.Query(query)

@@ -17,7 +17,8 @@ const (
 	candidateSurnameParam = "candidateSurname"
 	typeParameter         = "type"
 	idParameter           = "id"
-	pageParameter         = "page"
+	pageNumberParameter   = "page"
+	pageSizeParameter     = "size"
 )
 
 // LogInRequest presents request for login.
@@ -159,24 +160,23 @@ func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Content-Type", "application/json")
 
 	t := r.URL.Query().Get(typeParameter)
-	pageNumber := r.URL.Query().Get(pageParameter)
+	pageNumber := r.URL.Query().Get(pageNumberParameter)
+	pageSize := r.URL.Query().Get(pageSizeParameter)
 
-	ok, err := ValidateNumber(pageNumber)
-	if !ok {
+	if pageNumber == "" {
+		pageNumber = "1"
+	}
+
+	if pageSize == "" {
+		pageSize = "10"
+	}
+
+	if err := ValidateGetRequestsRequest(t, pageNumber, pageSize); err != nil {
 		sendResponse(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
-	if err != nil {
-		sendResponse(rw, err.Error(), http.StatusInternalServerError)
-		return
-	}
 
-	if err := ValidateRequestState(t); err != nil {
-		sendResponse(rw, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	userRequests, err := s.Referral.GetRequests(r.Context(), t, pageNumber)
+	userRequests, err := s.Referral.GetRequests(r.Context(), t, pageNumber, pageSize)
 	if err != nil {
 		sendResponse(rw, err.Error(), http.StatusInternalServerError)
 		return
@@ -191,13 +191,8 @@ func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 
 	id := r.URL.Query().Get(idParameter)
 
-	ok, err := ValidateNumber(id)
-	if !ok {
+	if err := ValidateNumber(id); err != nil {
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
-		return
-	}
-	if err != nil {
-		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
 		return
 	}
 
@@ -238,17 +233,12 @@ func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ok, err := ValidateNumber(request.ID)
-	if !ok {
+	if err := ValidateNumber(request.ID); err != nil {
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
-	if err != nil {
-		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
-		return
-	}
 
-	err = s.Referral.UpdateRequest(request.ID, request.NewStatus)
+	err := s.Referral.UpdateRequest(request.ID, request.NewStatus)
 	if errors.Is(err, service.ErrNoResult) {
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
@@ -322,6 +312,31 @@ var requestsState = map[string]bool{
 	"":          true,
 }
 
+// ValidateGetRequestsRequest validates parameters of request of getting requests.
+func ValidateGetRequestsRequest(state, pageNumber, pageSize string) error {
+	if !requestsState[strings.ToLower(state)] {
+		return fmt.Errorf("%w: request state", ErrInvalidParameter)
+	}
+
+	idExp := "^[1-9]\\d*"
+	ok, err := regexp.MatchString(idExp, pageNumber)
+	if !ok {
+		return fmt.Errorf("%w: numeric parameter has bad format", ErrInvalidParameter)
+	}
+	if err != nil {
+		return fmt.Errorf("cannot validate input parameter: %w", err)
+	}
+
+	ok, err = regexp.MatchString(idExp, pageSize)
+	if !ok {
+		return fmt.Errorf("%w: numeric parameter has bad format", ErrInvalidParameter)
+	}
+	if err != nil {
+		return fmt.Errorf("cannot validate input parameter: %w", err)
+	}
+	return nil
+}
+
 // ValidateRequestState validates data for request filtering.
 func ValidateRequestState(state string) error {
 	if !requestsState[strings.ToLower(state)] {
@@ -332,15 +347,15 @@ func ValidateRequestState(state string) error {
 }
 
 // ValidateNumber checks if parameter is number.
-func ValidateNumber(id string) (bool, error) {
+func ValidateNumber(id string) error {
 	idExp := "^[1-9]\\d*"
 	ok, err := regexp.MatchString(idExp, id)
 	if !ok {
-		return ok, fmt.Errorf("%w: numeric parameter has bad format", ErrInvalidParameter)
+		return fmt.Errorf("%w: numeric parameter has bad format", ErrInvalidParameter)
 	}
 	if err != nil {
-		return ok, fmt.Errorf("cannot validate input parameter: %w", err)
+		return fmt.Errorf("cannot validate input parameter: %w", err)
 	}
 
-	return ok, nil
+	return nil
 }
