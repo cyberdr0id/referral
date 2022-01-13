@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 )
 
 // UserRequests presents a type for user requests data.
@@ -18,38 +19,41 @@ type UserRequests struct {
 // GetRequests gives user requests by id.
 func (r *Repository) GetRequests(id, status string, pageNumber, pageSize int) ([]UserRequests, error) {
 	var requests []UserRequests
+	var whereVal []interface{}
+	var whereCol []string
 	var query string
 
-	offset := (pageNumber - 1) * pageSize
-
-	if status == "" {
-		query = fmt.Sprintf(`
-				SELECT 
-					id, candidate_name, candidate_surname, status, updated 
-				FROM 
-					requests 
-				WHERE author_id = %s
-				LIMIT %d
-				OFFSET %d
-				`, id, pageSize, offset)
-	} else {
-		query = fmt.Sprintf(`
-				SELECT 
-					id, candidate_name, candidate_surname, status, updated 
-				FROM 
-					requests 
-				WHERE 
-					author_id = %s AND requests.status = '%s'
-				LIMIT %d
-				OFFSET %d
-				`, id, status, pageSize, offset)
+	whereValues := map[string]interface{}{
+		"author_id": id,
+		"status":    status,
 	}
 
-	rows, err := r.db.Query(query)
+	offset := (pageNumber - 1) * pageSize
+	paramNumber := 1
+
+	for k, v := range whereValues {
+		if v == "" {
+			continue
+		}
+		whereVal = append(whereVal, v)
+		whereCol = append(whereCol, fmt.Sprintf("%s = $%d", k, paramNumber))
+
+		paramNumber++
+	}
+
+	whereVal = append(whereVal, pageSize, offset)
+
+	query = fmt.Sprintf(`
+			SELECT 
+				id, candidate_name, candidate_surname, status, updated 
+			FROM 
+				requests 
+			WHERE `+strings.Join(whereCol, " AND ")+` LIMIT $%d OFFSET $%d`, paramNumber, paramNumber+1)
+
+	rows, err := r.db.Query(query, whereVal...)
 	if err != nil {
 		return nil, fmt.Errorf("error with query executing: %w", err)
 	}
-	defer rows.Close()
 
 	for rows.Next() {
 		request := UserRequests{}
