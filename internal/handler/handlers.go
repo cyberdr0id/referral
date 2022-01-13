@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/cyberdr0id/referral/internal/service"
@@ -19,6 +20,9 @@ const (
 	idParameter           = "id"
 	pageNumberParameter   = "page"
 	pageSizeParameter     = "size"
+
+	defaultPageNumber = "1"
+	defaultPageSize   = "10"
 )
 
 // LogInRequest presents request for login.
@@ -164,11 +168,11 @@ func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 	pageSize := r.URL.Query().Get(pageSizeParameter)
 
 	if pageNumber == "" {
-		pageNumber = "1"
+		pageNumber = defaultPageNumber
 	}
 
 	if pageSize == "" {
-		pageSize = "10"
+		pageSize = defaultPageSize
 	}
 
 	if err := ValidateGetRequestsRequest(t, pageNumber, pageSize); err != nil {
@@ -176,7 +180,19 @@ func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userRequests, err := s.Referral.GetRequests(r.Context(), t, pageNumber, pageSize)
+	pageNumberInt, err := strconv.Atoi(pageNumber)
+	if err != nil {
+		sendResponse(rw, fmt.Errorf("cannot convert page number to integer: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	pageSizeInt, err := strconv.Atoi(pageSize)
+	if err != nil {
+		sendResponse(rw, fmt.Errorf("cannot convert page size to integer: %w", err), http.StatusBadRequest)
+		return
+	}
+
+	userRequests, err := s.Referral.GetRequests(r.Context(), t, pageNumberInt, pageSizeInt)
 	if err != nil {
 		sendResponse(rw, err.Error(), http.StatusInternalServerError)
 		return
