@@ -16,23 +16,35 @@ type UserRequests struct {
 }
 
 // GetRequests gives user requests by id.
-func (r *Repository) GetRequests(id string, status string) ([]UserRequests, error) {
+func (r *Repository) GetRequests(id, status string, pageNumber, pageSize int) ([]UserRequests, error) {
 	var requests []UserRequests
-	var query string
+	var whereVal []interface{}
+
+	query := `
+			SELECT
+				id, candidate_name, candidate_surname, status, updated
+			FROM
+				requests 
+			WHERE
+				author_id = $1%s
+			LIMIT $%d
+			OFFSET $%d
+			`
+
+	offset := (pageNumber - 1) * pageSize
 
 	if status == "" {
-		query = fmt.Sprintf(`SELECT id, candidate_name, candidate_surname, status, updated 
-				 FROM requests WHERE author_id = %s`, id)
+		query = fmt.Sprintf(query, status, 2, 3)
+		whereVal = append(whereVal, id, pageSize, offset)
 	} else {
-		query = fmt.Sprintf(`SELECT id, candidate_name, candidate_surname, status, updated 
-				 FROM requests WHERE author_id = %s AND requests.status = '%s'`, id, status)
+		query = fmt.Sprintf(query, " AND status = $2 ", 3, 4)
+		whereVal = append(whereVal, id, status, pageSize, offset)
 	}
 
-	rows, err := r.db.Query(query)
+	rows, err := r.db.Query(query, whereVal...)
 	if err != nil {
 		return nil, fmt.Errorf("error with query executing: %w", err)
 	}
-	defer rows.Close()
 
 	for rows.Next() {
 		request := UserRequests{}

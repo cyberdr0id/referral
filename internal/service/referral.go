@@ -59,13 +59,13 @@ func (s *ReferralService) AddCandidate(ctx context.Context, request SubmitCandid
 }
 
 // GetRequests returns user requests.
-func (s *ReferralService) GetRequests(ctx context.Context, status string) ([]repository.UserRequests, error) {
+func (s *ReferralService) GetRequests(ctx context.Context, status string, pageNumber, pageSize int) ([]repository.UserRequests, error) {
 	userID, ok := mycontext.GetUserID(ctx)
 	if !ok {
 		return nil, fmt.Errorf("cannot get user id from context")
 	}
 
-	requests, err := s.repo.GetRequests(userID, status)
+	requests, err := s.repo.GetRequests(userID, status, pageNumber, pageSize)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get user requests: %w", err)
 	}

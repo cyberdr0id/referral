@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/cyberdr0id/referral/internal/service"
@@ -15,8 +16,13 @@ const (
 	filenameParam         = "fileName"
 	candidateNameParam    = "candidateName"
 	candidateSurnameParam = "candidateSurname"
-	typeParameter         = "type"
+	statusParameter       = "status"
 	idParameter           = "id"
+	pageNumberParameter   = "page"
+	pageSizeParameter     = "size"
+
+	defaultPageNumber = 1
+	defaultPageSize   = 10
 )
 
 // LogInRequest presents request for login.
@@ -157,14 +163,17 @@ func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 	rw.Header().Set("Content-Type", "application/json")
 
-	t := r.URL.Query().Get(typeParameter)
+	t := r.URL.Query().Get(statusParameter)
+	pageNumber := r.URL.Query().Get(pageNumberParameter)
+	pageSize := r.URL.Query().Get(pageSizeParameter)
 
-	if err := ValidateRequestState(t); err != nil {
+	pn, ps, err := ValidateGetRequestsRequest(t, pageNumber, pageSize)
+	if err != nil {
 		sendResponse(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	userRequests, err := s.Referral.GetRequests(r.Context(), t)
+	userRequests, err := s.Referral.GetRequests(r.Context(), t, pn, ps)
 	if err != nil {
 		sendResponse(rw, err.Error(), http.StatusInternalServerError)
 		return
@@ -179,13 +188,8 @@ func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 
 	id := r.URL.Query().Get(idParameter)
 
-	ok, err := ValidateID(id)
-	if !ok {
+	if err := ValidateNumber(id); err != nil {
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
-		return
-	}
-	if err != nil {
-		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
 		return
 	}
 
@@ -204,7 +208,7 @@ type UpdateRequest struct {
 	NewStatus string `json:"status"`
 }
 
-// UpdateResponse prsents type with info about request update.
+// UpdateRespone prsents type with info about request update.
 type UpdateRespone struct {
 	Message string `json:"message"`
 }
@@ -226,17 +230,12 @@ func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	ok, err := ValidateID(request.ID)
-	if !ok {
+	if err := ValidateNumber(request.ID); err != nil {
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
-	if err != nil {
-		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
-		return
-	}
 
-	err = s.Referral.UpdateRequest(request.ID, request.NewStatus)
+	err := s.Referral.UpdateRequest(request.ID, request.NewStatus)
 	if errors.Is(err, service.ErrNoResult) {
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
@@ -310,6 +309,54 @@ var requestsState = map[string]bool{
 	"":          true,
 }
 
+// ValidateGetRequestsRequest validates parameters of request of getting requests.
+func ValidateGetRequestsRequest(state, pageNumber, pageSize string) (int, int, error) {
+	var pn int
+	var ps int
+
+	if !requestsState[strings.ToLower(state)] {
+		return 0, 0, fmt.Errorf("%w: request state", ErrInvalidParameter)
+	}
+
+	idExp := "^([1-9])\\d*$"
+
+	if pageSize != "" {
+		ok, err := regexp.MatchString(idExp, pageSize)
+		if !ok {
+			return 0, 0, fmt.Errorf("%w: numeric parameter has bad format", ErrInvalidParameter)
+		}
+		if err != nil {
+			return 0, 0, fmt.Errorf("cannot validate input parameter: %w", err)
+		}
+
+		ps, err = strconv.Atoi(pageSize)
+		if err != nil {
+			return 0, 0, fmt.Errorf("cannot conver page number to int: %w", err)
+		}
+	} else {
+		ps = defaultPageSize
+	}
+
+	if pageNumber != "" {
+		ok, err := regexp.MatchString(idExp, pageNumber)
+		if !ok {
+			return 0, 0, fmt.Errorf("%w: numeric parameter has bad format", ErrInvalidParameter)
+		}
+		if err != nil {
+			return 0, 0, fmt.Errorf("cannot validate input parameter: %w", err)
+		}
+
+		pn, err = strconv.Atoi(pageNumber)
+		if err != nil {
+			return 0, 0, fmt.Errorf("cannot convert page size to integer: %w", err)
+		}
+	} else {
+		pn = defaultPageNumber
+	}
+
+	return pn, ps, nil
+}
+
 // ValidateRequestState validates data for request filtering.
 func ValidateRequestState(state string) error {
 	if !requestsState[strings.ToLower(state)] {
@@ -319,16 +366,16 @@ func ValidateRequestState(state string) error {
 	return nil
 }
 
-// ValidateID checks if parameter is number.
-func ValidateID(id string) (bool, error) {
+// ValidateNumber checks if parameter is number.
+func ValidateNumber(id string) error {
 	idExp := "^[1-9]\\d*"
 	ok, err := regexp.MatchString(idExp, id)
 	if !ok {
-		return ok, fmt.Errorf("%w: id has bad format", ErrInvalidParameter)
+		return fmt.Errorf("%w: numeric parameter has bad format", ErrInvalidParameter)
 	}
 	if err != nil {
-		return ok, fmt.Errorf("cannot validate user ID: %w", err)
+		return fmt.Errorf("cannot validate input parameter: %w", err)
 	}
 
-	return ok, nil
+	return nil
 }
