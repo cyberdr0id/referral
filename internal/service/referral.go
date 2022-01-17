@@ -59,13 +59,21 @@ func (s *ReferralService) AddCandidate(ctx context.Context, request SubmitCandid
 }
 
 // GetRequests returns user requests.
-func (s *ReferralService) GetRequests(ctx context.Context, status string, pageNumber, pageSize int) ([]repository.UserRequests, error) {
+func (s *ReferralService) GetRequests(ctx context.Context, status string, pageNumber, pageSize int, allFlag bool) ([]repository.UserRequests, error) {
 	userID, ok := mycontext.GetUserID(ctx)
 	if !ok {
 		return nil, fmt.Errorf("cannot get user id from context")
 	}
 
-	requests, err := s.repo.GetRequests(userID, status, pageNumber, pageSize)
+	isAdmin, err := s.repo.IsAdmin(userID)
+	if err != nil {
+		return nil, fmt.Errorf("cannot check if user is admin: %w", err)
+	}
+	if !isAdmin && allFlag {
+		return nil, fmt.Errorf("insufficient privileges")
+	}
+
+	requests, err := s.repo.GetRequests(userID, status, pageNumber, pageSize, allFlag)
 	if err != nil {
 		return nil, fmt.Errorf("cannot get user requests: %w", err)
 	}

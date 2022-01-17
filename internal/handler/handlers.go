@@ -166,14 +166,15 @@ func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 	t := r.URL.Query().Get(statusParameter)
 	pageNumber := r.URL.Query().Get(pageNumberParameter)
 	pageSize := r.URL.Query().Get(pageSizeParameter)
+	allFlag := r.URL.Query().Get("all")
 
-	pn, ps, err := ValidateGetRequestsRequest(t, pageNumber, pageSize)
+	pn, ps, all, err := ValidateGetRequestsRequest(t, pageNumber, pageSize, allFlag)
 	if err != nil {
 		sendResponse(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	userRequests, err := s.Referral.GetRequests(r.Context(), t, pn, ps)
+	userRequests, err := s.Referral.GetRequests(r.Context(), t, pn, ps, all)
 	if err != nil {
 		sendResponse(rw, err.Error(), http.StatusInternalServerError)
 		return
@@ -310,12 +311,12 @@ var requestsState = map[string]bool{
 }
 
 // ValidateGetRequestsRequest validates parameters of request of getting requests.
-func ValidateGetRequestsRequest(state, pageNumber, pageSize string) (int, int, error) {
+func ValidateGetRequestsRequest(state, pageNumber, pageSize, allFlag string) (int, int, bool, error) {
 	var pn int
 	var ps int
 
 	if !requestsState[strings.ToLower(state)] {
-		return 0, 0, fmt.Errorf("%w: request state", ErrInvalidParameter)
+		return 0, 0, false, fmt.Errorf("%w: request state", ErrInvalidParameter)
 	}
 
 	idExp := "^([1-9])\\d*$"
@@ -323,15 +324,15 @@ func ValidateGetRequestsRequest(state, pageNumber, pageSize string) (int, int, e
 	if pageSize != "" {
 		ok, err := regexp.MatchString(idExp, pageSize)
 		if !ok {
-			return 0, 0, fmt.Errorf("%w: numeric parameter has bad format", ErrInvalidParameter)
+			return 0, 0, false, fmt.Errorf("%w: numeric parameter has bad format", ErrInvalidParameter)
 		}
 		if err != nil {
-			return 0, 0, fmt.Errorf("cannot validate input parameter: %w", err)
+			return 0, 0, false, fmt.Errorf("cannot validate input parameter: %w", err)
 		}
 
 		ps, err = strconv.Atoi(pageSize)
 		if err != nil {
-			return 0, 0, fmt.Errorf("cannot conver page number to int: %w", err)
+			return 0, 0, false, fmt.Errorf("cannot conver page number to int: %w", err)
 		}
 	} else {
 		ps = defaultPageSize
@@ -340,21 +341,30 @@ func ValidateGetRequestsRequest(state, pageNumber, pageSize string) (int, int, e
 	if pageNumber != "" {
 		ok, err := regexp.MatchString(idExp, pageNumber)
 		if !ok {
-			return 0, 0, fmt.Errorf("%w: numeric parameter has bad format", ErrInvalidParameter)
+			return 0, 0, false, fmt.Errorf("%w: numeric parameter has bad format", ErrInvalidParameter)
 		}
 		if err != nil {
-			return 0, 0, fmt.Errorf("cannot validate input parameter: %w", err)
+			return 0, 0, false, fmt.Errorf("cannot validate input parameter: %w", err)
 		}
 
 		pn, err = strconv.Atoi(pageNumber)
 		if err != nil {
-			return 0, 0, fmt.Errorf("cannot convert page size to integer: %w", err)
+			return 0, 0, false, fmt.Errorf("cannot convert page size to integer: %w", err)
 		}
 	} else {
 		pn = defaultPageNumber
 	}
 
-	return pn, ps, nil
+	var af bool
+	if allFlag == "" {
+		af = false
+	} else if allFlag == "true" || allFlag == "false" {
+		af, _ = strconv.ParseBool(allFlag)
+	} else {
+		return 0, 0, false, fmt.Errorf("%w: 'all' parameter has bad format", ErrInvalidParameter)
+	}
+
+	return pn, ps, af, nil
 }
 
 // ValidateRequestState validates data for request filtering.

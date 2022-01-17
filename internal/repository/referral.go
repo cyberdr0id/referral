@@ -16,7 +16,7 @@ type UserRequests struct {
 }
 
 // GetRequests gives user requests by id.
-func (r *Repository) GetRequests(id, status string, pageNumber, pageSize int) ([]UserRequests, error) {
+func (r *Repository) GetRequests(id, status string, pageNumber, pageSize int, allFlag bool) ([]UserRequests, error) {
 	var requests []UserRequests
 	var whereVal []interface{}
 
@@ -24,21 +24,29 @@ func (r *Repository) GetRequests(id, status string, pageNumber, pageSize int) ([
 			SELECT
 				id, candidate_name, candidate_surname, status, updated
 			FROM
-				requests 
-			WHERE
-				author_id = $1%s
+				requests%s
 			LIMIT $%d
 			OFFSET $%d
 			`
 
 	offset := (pageNumber - 1) * pageSize
 
-	if status == "" {
-		query = fmt.Sprintf(query, status, 2, 3)
-		whereVal = append(whereVal, id, pageSize, offset)
+	if allFlag {
+		if status == "" {
+			query = fmt.Sprintf(query, status, 1, 2)
+			whereVal = append(whereVal, pageSize, offset)
+		} else {
+			query = fmt.Sprintf(query, " WHERE status = $1 ", 2, 3)
+			whereVal = append(whereVal, status, pageSize, offset)
+		}
 	} else {
-		query = fmt.Sprintf(query, " AND status = $2 ", 3, 4)
-		whereVal = append(whereVal, id, status, pageSize, offset)
+		if status == "" {
+			query = fmt.Sprintf(query, " WHERE author_id = $1 ", 2, 3)
+			whereVal = append(whereVal, id, pageSize, offset)
+		} else {
+			query = fmt.Sprintf(query, " WHERE author_id = $1 AND status = $2 ", 3, 4)
+			whereVal = append(whereVal, id, status, pageSize, offset)
+		}
 	}
 
 	rows, err := r.db.Query(query, whereVal...)
@@ -62,6 +70,28 @@ func (r *Repository) GetRequests(id, status string, pageNumber, pageSize int) ([
 	}
 
 	return requests, nil
+}
+
+func (r *Repository) IsAdmin(userID string) (bool, error) {
+	var isAdmin bool
+
+	query := `
+		SELECT	
+			is_admin
+		FROM
+			users
+		WHERE 
+			id = $1`
+
+	err := r.db.QueryRow(query, userID).Scan(&isAdmin)
+	if errors.Is(err, sql.ErrNoRows) {
+		return false, ErrNoUser
+	}
+	if err != nil {
+		return false, fmt.Errorf("cannot check if user is admin: %w", err)
+	}
+
+	return isAdmin, nil
 }
 
 // AddCandidate adds submitted candidate.
