@@ -20,9 +20,9 @@ const (
 	idParameter           = "id"
 	pageNumberParameter   = "page"
 	pageSizeParameter     = "size"
-
-	defaultPageNumber = 1
-	defaultPageSize   = 10
+	allParameter          = "all"
+	defaultPageNumber     = 1
+	defaultPageSize       = 10
 )
 
 // LogInRequest presents request for login.
@@ -166,7 +166,7 @@ func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 	t := r.URL.Query().Get(statusParameter)
 	pageNumber := r.URL.Query().Get(pageNumberParameter)
 	pageSize := r.URL.Query().Get(pageSizeParameter)
-	allFlag := r.URL.Query().Get("all")
+	allFlag := r.URL.Query().Get(allParameter)
 
 	pn, ps, all, err := ValidateGetRequestsRequest(t, pageNumber, pageSize, allFlag)
 	if err != nil {

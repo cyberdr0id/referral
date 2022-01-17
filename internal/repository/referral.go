@@ -72,6 +72,7 @@ func (r *Repository) GetRequests(id, status string, pageNumber, pageSize int, al
 	return requests, nil
 }
 
+// IsAdmin checks by user ID if user is admin.
 func (r *Repository) IsAdmin(userID string) (bool, error) {
 	var isAdmin bool
 
