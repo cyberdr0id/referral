@@ -49,9 +49,9 @@ func main() {
 	authService := service.NewAuthService(repo, tm)
 	referralService := service.NewReferralService(repo, s3)
 
-	srv := handler.NewServer(authService, referralService)
+	server := handler.NewServer(authService, referralService)
 
-	if err := srv.Run(viper.GetString("port"), srv); err != nil {
+	if err := server.Run(viper.GetString("port"), server); err != nil {
 		log.Fatalf("error while starting server: %s", err.Error())
 	}
 }

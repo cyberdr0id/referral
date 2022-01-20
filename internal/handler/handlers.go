@@ -28,46 +28,47 @@ const (
 	defaultPageSize   = 10
 )
 
-// LogInRequest presents request for login.
+// LogInRequest type that presents data for authorization.
 type LogInRequest struct {
 	Name     string `json:"name"`
 	Password string `json:"password"`
 }
 
-// SignUpRequest presents request for signup.
+// SignUpRequest type that presents data for registration.
 type SignUpRequest struct {
 	Name     string `json:"name"`
 	Password string `json:"password"`
 }
 
-// CandidateSendingResponse type presents candidate sending response.
+// CandidateSendingResponse type that presents ID of sent candidate.
 type CandidateSendingResponse struct {
 	CandidateID string `json:"candidateid"`
 }
 
-// DownloadResponse type presents a type which contains downloaded candidate cv.
+// DownloadResponse presents a type which contains link to file for download candidate cv.
 type DownloadResponse struct {
 	FileLink string `json:"filelink"`
 }
 
-// LogInResponse type presents structure of the log in response.
+// LogInResponse type presents response after successful authorization.
 type LogInResponse struct {
 	AccessToken string `json:"accessToken"`
 }
 
-// SignUpResponse type presents structure of the sign up response.
+// SignUpResponse type presents response after successful registration.
 type SignUpResponse struct {
 	ID string `json:"id"`
 }
 
-// ErrorResponse presents a custom error type.
+// ErrorResponse presents a custom error type for error response.
 type ErrorResponse struct {
 	Message string `json:"error"`
 }
 
-// ErrInvalidParameter presetns an error when user input invalid parameter.
+// ErrInvalidParameter presetns an error when user enters invalid parameter.
 var ErrInvalidParameter = errors.New("invalid parameter")
 
+// sendResponse sends resposne with specified object in body.
 func sendResponse(w http.ResponseWriter, resp interface{}, code int) {
 	w.WriteHeader(code)
 	w.Header().Set("Content-Type", "application/json")
@@ -115,8 +116,7 @@ func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	err := request.ValidateLogInRequest()
-	if err != nil {
+	if err := request.ValidateLogInRequest(); err != nil {
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusUnauthorized)
 		return
 	}
@@ -163,9 +163,9 @@ func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 	sendResponse(rw, CandidateSendingResponse{CandidateID: id}, http.StatusOK)
 }
 
-// GetRequests inputs all user requests.
+// GetRequests outputs all user requests.
 func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
-	t := r.URL.Query().Get(statusParameter)
+	status := r.URL.Query().Get(statusParameter)
 	pageNumber := r.URL.Query().Get(pageNumberParameter)
 	pageSize := r.URL.Query().Get(pageSizeParameter)
 
@@ -175,13 +175,13 @@ func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	pn, ps, err := ValidateGetRequestsRequest(t, pageNumber, pageSize, userID)
+	pageNumberInt, pageSizeInt, err := ValidateGetRequestsRequest(status, pageNumber, pageSize, userID)
 	if err != nil {
 		sendResponse(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	userRequests, err := s.Referral.GetRequests(userID, t, pn, ps)
+	userRequests, err := s.Referral.GetRequests(userID, status, pageNumberInt, pageSizeInt)
 	if err != nil {
 		sendResponse(rw, err.Error(), http.StatusInternalServerError)
 		return
@@ -192,18 +192,18 @@ func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 
 // GetAllRequests admin handler that returns list of all requests.
 func (s *Server) GetAllRequests(rw http.ResponseWriter, r *http.Request) {
-	t := r.URL.Query().Get(statusParameter)
+	status := r.URL.Query().Get(statusParameter)
 	pageNumber := r.URL.Query().Get(pageNumberParameter)
 	pageSize := r.URL.Query().Get(pageSizeParameter)
 	userID := r.URL.Query().Get(userIDParameter)
 
-	pn, ps, err := ValidateGetRequestsRequest(t, pageNumber, pageSize, userID)
+	pageNumberInt, pageSizeInt, err := ValidateGetRequestsRequest(status, pageNumber, pageSize, userID)
 	if err != nil {
 		sendResponse(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	userRequests, err := s.Referral.GetRequests(userID, t, pn, ps)
+	userRequests, err := s.Referral.GetRequests(userID, status, pageNumberInt, pageSizeInt)
 	if err != nil {
 		sendResponse(rw, err.Error(), http.StatusInternalServerError)
 		return
@@ -236,7 +236,7 @@ type UpdateRequest struct {
 	NewStatus string `json:"status"`
 }
 
-// UpdateRespone prsents type with info about request update.
+// UpdateRespone presents type with info about request update.
 type UpdateRespone struct {
 	Message string `json:"message"`
 }
@@ -251,12 +251,7 @@ func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 	}
 	defer r.Body.Close()
 
-	if err := ValidateRequestState(request.NewStatus); err != nil {
-		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
-		return
-	}
-
-	if err := ValidateNumber(request.ID); err != nil {
+	if err := request.ValidateUpdateRequest(); err != nil {
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
@@ -274,7 +269,25 @@ func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 	sendResponse(rw, UpdateRespone{Message: fmt.Sprintf("request status updated to '%s'", request.NewStatus)}, http.StatusOK)
 }
 
-// ValidateSignUpRequest validates data after signup.
+// ValidateUpdateRequest validates data before request update.
+func (r *UpdateRequest) ValidateUpdateRequest() error {
+	if !requestsStatus[strings.ToLower(r.NewStatus)] {
+		return fmt.Errorf("%w: request status", ErrInvalidParameter)
+	}
+
+	idExp := "^[1-9]\\d*"
+	ok, err := regexp.MatchString(idExp, r.ID)
+	if !ok {
+		return fmt.Errorf("%w: numeric parameter has bad format", ErrInvalidParameter)
+	}
+	if err != nil {
+		return fmt.Errorf("cannot validate input parameter: %w", err)
+	}
+
+	return nil
+}
+
+// ValidateSignUpRequest validates registration data .
 func (r *SignUpRequest) ValidateSignUpRequest() error {
 	if r.Name == "" {
 		return fmt.Errorf("%w: name", ErrInvalidParameter)
@@ -295,7 +308,7 @@ func (r *SignUpRequest) ValidateSignUpRequest() error {
 	return nil
 }
 
-// ValidateLogInRequest validates data after login.
+// ValidateLogInRequest validates authorization data.
 func (r *LogInRequest) ValidateLogInRequest() error {
 	if r.Name == "" {
 		return fmt.Errorf("%w: name", ErrInvalidParameter)
@@ -308,7 +321,7 @@ func (r *LogInRequest) ValidateLogInRequest() error {
 	return nil
 }
 
-// ValidateCandidateSendingRequest validates data after sending a candidate.
+// ValidateCandidateSendingRequest validates data before candidate sending.
 func ValidateCandidateSendingRequest(r service.SubmitCandidateRequest) error {
 	if len(r.CandidateName) == 0 || len(r.CandidateSurname) == 0 {
 		return fmt.Errorf("%w: wrong length", ErrInvalidParameter)
@@ -328,7 +341,7 @@ func ValidateCandidateSendingRequest(r service.SubmitCandidateRequest) error {
 	return nil
 }
 
-var requestsState = map[string]bool{
+var requestsStatus = map[string]bool{
 	"accepted":  true,
 	"rejected":  true,
 	"submitted": true,
@@ -336,12 +349,12 @@ var requestsState = map[string]bool{
 }
 
 // ValidateGetRequestsRequest validates parameters of request of getting requests.
-func ValidateGetRequestsRequest(state, pageNumber, pageSize, id string) (int, int, error) {
+func ValidateGetRequestsRequest(status, pageNumber, pageSize, id string) (int, int, error) {
 	var pn int
 	var ps int
 
-	if !requestsState[strings.ToLower(state)] {
-		return 0, 0, fmt.Errorf("%w: request state", ErrInvalidParameter)
+	if !requestsStatus[strings.ToLower(status)] {
+		return 0, 0, fmt.Errorf("%w: request status", ErrInvalidParameter)
 	}
 
 	idExp := "^([1-9])\\d*$"
@@ -391,10 +404,10 @@ func ValidateGetRequestsRequest(state, pageNumber, pageSize, id string) (int, in
 	return pn, ps, nil
 }
 
-// ValidateRequestState validates data for request filtering.
-func ValidateRequestState(state string) error {
-	if !requestsState[strings.ToLower(state)] {
-		return fmt.Errorf("%w: request state", ErrInvalidParameter)
+// ValidateRequestStatus validates data for request filtering.
+func ValidateRequestStatus(status string) error {
+	if !requestsStatus[strings.ToLower(status)] {
+		return fmt.Errorf("%w: request status", ErrInvalidParameter)
 	}
 
 	return nil

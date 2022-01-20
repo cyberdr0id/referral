@@ -6,14 +6,14 @@ func (s *Server) InitRoutes() {
 	s.Router.HandleFunc("/auth/login", s.LogIn).Methods("POST")
 	s.Router.HandleFunc("/auth/signup", s.SignUp).Methods("POST")
 
-	sr := s.Router.NewRoute().Subrouter()
-	sr.Use(s.AuthorizationMiddleware)
+	userRouter := s.Router.NewRoute().Subrouter()
+	userRouter.Use(s.AuthorizationMiddleware)
 
-	sr.HandleFunc("/references", s.SendCandidate).Methods("POST")
-	sr.HandleFunc("/references", s.GetRequests).Methods("GET")
-	sr.HandleFunc("/cvs", s.DownloadCV).Methods("GET")
+	userRouter.HandleFunc("/references", s.SendCandidate).Methods("POST")
+	userRouter.HandleFunc("/references", s.GetRequests).Methods("GET")
+	userRouter.HandleFunc("/cvs", s.DownloadCV).Methods("GET")
 
-	adminRouter := sr.NewRoute().Subrouter()
+	adminRouter := userRouter.NewRoute().Subrouter()
 	adminRouter.Use(s.AdminMiddleware)
 
 	adminRouter.HandleFunc("/admin/references", s.UpdateRequest).Methods("PUT")

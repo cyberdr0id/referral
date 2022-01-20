@@ -3,7 +3,7 @@ package hash
 
 import "golang.org/x/crypto/bcrypt"
 
-// HashPassword transform password to hash-string.
+// HashPassword transforms password to hash-string.
 func HashPassword(password string) (string, error) {
 	cost := 14
 
@@ -11,7 +11,7 @@ func HashPassword(password string) (string, error) {
 	return string(bytes), err
 }
 
-// CheckPasswordHash comparing password with his hash.
+// CheckPasswordHash comparing password with its hash.
 func CheckPasswordHash(password, hash string) bool {
 	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil
 }

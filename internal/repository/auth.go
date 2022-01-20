@@ -11,10 +11,13 @@ import (
 var (
 	// ErrNoUser handle an error when tyring to get non-database user.
 	ErrNoUser = errors.New("user doesn't exists")
+
 	// ErrNoFile handle an error when user try to get non-database CV.
 	ErrNoFile = errors.New("there is no file with input id")
+
 	// ErrNoResult presents an error when there are no results for the entered data.
 	ErrNoResult = errors.New("there are no results for the entered data")
+
 	// ErrUserAlreadyExists handles an error when user tries to sign up with existing data.
 	ErrUserAlreadyExists = errors.New("user already exists")
 )
@@ -27,8 +30,12 @@ const (
 func (r *Repository) CreateUser(name, password string) (string, error) {
 	var id string
 
-	query := `INSERT INTO users(name, password)
-			  VALUES($1, $2) RETURNING id;`
+	query := `INSERT INTO 
+				users(name, password)
+			  VALUES
+			  	($1, $2)
+			  RETURNING 
+			  	id;`
 
 	err := r.db.QueryRow(query, name, password).Scan(&id)
 	if err, ok := err.(*pq.Error); ok && err.Code.Name() == errorCodeName {
@@ -45,12 +52,14 @@ func (r *Repository) CreateUser(name, password string) (string, error) {
 func (r *Repository) GetUser(name string) (User, error) {
 	var user User
 
-	query := `SELECT id, name, password, is_admin, created, updated 
-			  FROM users 
-			  WHERE name=$1;`
+	query := `SELECT 
+				id, name, password, is_admin, created, updated 
+			  FROM 
+			  	users 
+			  WHERE 
+			  	name = $1;`
 
-	row := r.db.QueryRow(query, name)
-	err := row.Scan(&user.ID, &user.Name, &user.Password, &user.IsAdmin, &user.Created, &user.Updated)
+	err := r.db.QueryRow(query, name).Scan(&user.ID, &user.Name, &user.Password, &user.IsAdmin, &user.Created, &user.Updated)
 	if errors.Is(err, sql.ErrNoRows) {
 		return User{}, ErrNoUser
 	}

@@ -76,8 +76,11 @@ func (r *Repository) GetRequests(id, status string, pageNumber, pageSize int) ([
 func (r *Repository) AddCandidate(userID, name, surname, fileID string) (string, error) {
 	var requestID string
 
-	query := `INSERT INTO requests(author_id, candidate_name, candidate_surname, cv_file_id) 
-			  VALUES($1, $2, $3, $4) RETURNING id;`
+	query := `INSERT INTO 
+				requests(author_id, candidate_name, candidate_surname, cv_file_id) 
+			  VALUES
+			  	($1, $2, $3, $4)
+			  RETURNING id;`
 
 	err := r.db.QueryRow(query, userID, name, surname, fileID).Scan(&requestID)
 	if err != nil {
@@ -89,9 +92,12 @@ func (r *Repository) AddCandidate(userID, name, surname, fileID string) (string,
 
 // UpdateRequest updates user request status.
 func (r *Repository) UpdateRequest(id, newState string) error {
-	query := `UPDATE requests 
-			  SET status = $1
-			  WHERE id = $2;`
+	query := `UPDATE 
+				requests 
+			  SET 
+			  	status = $1
+			  WHERE 
+			  	id = $2;`
 
 	rows, err := r.db.Exec(query, newState, id)
 
@@ -110,9 +116,12 @@ func (r *Repository) UpdateRequest(id, newState string) error {
 func (r *Repository) GetCVID(id string) (string, error) {
 	var fileID string
 
-	query := `SELECT cv_file_id
-			  FROM requests
-			  WHERE id = $1`
+	query := `SELECT
+				cv_file_id
+			  FROM 
+			  	requests
+			  WHERE 
+			  	id = $1`
 
 	err := r.db.QueryRow(query, id).Scan(&fileID)
 	if errors.Is(err, sql.ErrNoRows) {

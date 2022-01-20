@@ -9,7 +9,7 @@ import (
 	"github.com/cyberdr0id/referral/pkg/jwt"
 )
 
-// AuthService present a service for authorization service.
+// AuthService presents a type of authorization business logic.
 type AuthService struct {
 	repo         *repository.Repository
 	tokenManager *jwt.TokenManager
