@@ -16,7 +16,7 @@ type UserRequests struct {
 }
 
 // GetRequests gives user requests by id.
-func (r *Repository) GetRequests(id, status string, pageNumber, pageSize int, allFlag bool) ([]UserRequests, error) {
+func (r *Repository) GetRequests(id, status string, pageNumber, pageSize int) ([]UserRequests, error) {
 	var requests []UserRequests
 	var whereVal []interface{}
 
@@ -31,9 +31,9 @@ func (r *Repository) GetRequests(id, status string, pageNumber, pageSize int, al
 
 	offset := (pageNumber - 1) * pageSize
 
-	if allFlag {
+	if id == "" {
 		if status == "" {
-			query = fmt.Sprintf(query, status, 1, 2)
+			query = fmt.Sprintf(query, "", 1, 2)
 			whereVal = append(whereVal, pageSize, offset)
 		} else {
 			query = fmt.Sprintf(query, " WHERE status = $1 ", 2, 3)

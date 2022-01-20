@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/cyberdr0id/referral/internal/context"
 	"github.com/cyberdr0id/referral/internal/service"
 )
 
@@ -21,8 +22,10 @@ const (
 	pageNumberParameter   = "page"
 	pageSizeParameter     = "size"
 	allParameter          = "all"
-	defaultPageNumber     = 1
-	defaultPageSize       = 10
+	userIDParameter       = "user_id"
+
+	defaultPageNumber = 1
+	defaultPageSize   = 10
 )
 
 // LogInRequest presents request for login.
@@ -166,15 +169,43 @@ func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 	t := r.URL.Query().Get(statusParameter)
 	pageNumber := r.URL.Query().Get(pageNumberParameter)
 	pageSize := r.URL.Query().Get(pageSizeParameter)
-	allFlag := r.URL.Query().Get(allParameter)
 
-	pn, ps, all, err := ValidateGetRequestsRequest(t, pageNumber, pageSize, allFlag)
+	pn, ps, err := ValidateGetRequestsRequest(t, pageNumber, pageSize)
 	if err != nil {
 		sendResponse(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	userRequests, err := s.Referral.GetRequests(r.Context(), t, pn, ps, all)
+	userID, ok := context.GetUserID(r.Context())
+	if !ok {
+		sendResponse(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	userRequests, err := s.Referral.GetRequests(userID, t, pn, ps)
+	if err != nil {
+		sendResponse(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	sendResponse(rw, userRequests, http.StatusOK)
+}
+
+func (s *Server) GetAllRequests(rw http.ResponseWriter, r *http.Request) {
+	rw.Header().Set("Content-Type", "application/json")
+
+	t := r.URL.Query().Get(statusParameter)
+	pageNumber := r.URL.Query().Get(pageNumberParameter)
+	pageSize := r.URL.Query().Get(pageSizeParameter)
+	userID := r.URL.Query().Get(userIDParameter)
+
+	pn, ps, err := ValidateGetRequestsRequest(t, pageNumber, pageSize)
+	if err != nil {
+		sendResponse(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	userRequests, err := s.Referral.GetRequests(userID, t, pn, ps)
 	if err != nil {
 		sendResponse(rw, err.Error(), http.StatusInternalServerError)
 		return
@@ -311,12 +342,12 @@ var requestsState = map[string]bool{
 }
 
 // ValidateGetRequestsRequest validates parameters of request of getting requests.
-func ValidateGetRequestsRequest(state, pageNumber, pageSize, allFlag string) (int, int, bool, error) {
+func ValidateGetRequestsRequest(state, pageNumber, pageSize string) (int, int, error) {
 	var pn int
 	var ps int
 
 	if !requestsState[strings.ToLower(state)] {
-		return 0, 0, false, fmt.Errorf("%w: request state", ErrInvalidParameter)
+		return 0, 0, fmt.Errorf("%w: request state", ErrInvalidParameter)
 	}
 
 	idExp := "^([1-9])\\d*$"
@@ -324,15 +355,15 @@ func ValidateGetRequestsRequest(state, pageNumber, pageSize, allFlag string) (in
 	if pageSize != "" {
 		ok, err := regexp.MatchString(idExp, pageSize)
 		if !ok {
-			return 0, 0, false, fmt.Errorf("%w: numeric parameter has bad format", ErrInvalidParameter)
+			return 0, 0, fmt.Errorf("%w: numeric parameter has bad format", ErrInvalidParameter)
 		}
 		if err != nil {
-			return 0, 0, false, fmt.Errorf("cannot validate input parameter: %w", err)
+			return 0, 0, fmt.Errorf("cannot validate input parameter: %w", err)
 		}
 
 		ps, err = strconv.Atoi(pageSize)
 		if err != nil {
-			return 0, 0, false, fmt.Errorf("cannot conver page number to int: %w", err)
+			return 0, 0, fmt.Errorf("cannot conver page number to int: %w", err)
 		}
 	} else {
 		ps = defaultPageSize
@@ -341,30 +372,21 @@ func ValidateGetRequestsRequest(state, pageNumber, pageSize, allFlag string) (in
 	if pageNumber != "" {
 		ok, err := regexp.MatchString(idExp, pageNumber)
 		if !ok {
-			return 0, 0, false, fmt.Errorf("%w: numeric parameter has bad format", ErrInvalidParameter)
+			return 0, 0, fmt.Errorf("%w: numeric parameter has bad format", ErrInvalidParameter)
 		}
 		if err != nil {
-			return 0, 0, false, fmt.Errorf("cannot validate input parameter: %w", err)
+			return 0, 0, fmt.Errorf("cannot validate input parameter: %w", err)
 		}
 
 		pn, err = strconv.Atoi(pageNumber)
 		if err != nil {
-			return 0, 0, false, fmt.Errorf("cannot convert page size to integer: %w", err)
+			return 0, 0, fmt.Errorf("cannot convert page size to integer: %w", err)
 		}
 	} else {
 		pn = defaultPageNumber
 	}
 
-	var af bool
-	if allFlag == "" {
-		af = false
-	} else if allFlag == "true" || allFlag == "false" {
-		af, _ = strconv.ParseBool(allFlag)
-	} else {
-		return 0, 0, false, fmt.Errorf("%w: 'all' parameter has bad format", ErrInvalidParameter)
-	}
-
-	return pn, ps, af, nil
+	return pn, ps, nil
 }
 
 // ValidateRequestState validates data for request filtering.

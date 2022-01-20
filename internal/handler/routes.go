@@ -16,5 +16,6 @@ func (s *Server) InitRoutes() {
 	adminRouter := sr.NewRoute().Subrouter()
 	adminRouter.Use(s.AdminMiddleware)
 
-	adminRouter.HandleFunc("/references", s.UpdateRequest).Methods("PUT")
+	adminRouter.HandleFunc("/admin/references", s.UpdateRequest).Methods("PUT")
+	adminRouter.HandleFunc("/admin/references", s.GetAllRequests).Methods("GET")
 }
