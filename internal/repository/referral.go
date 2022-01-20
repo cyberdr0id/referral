@@ -24,21 +24,29 @@ func (r *Repository) GetRequests(id, status string, pageNumber, pageSize int) ([
 			SELECT
 				id, candidate_name, candidate_surname, status, updated
 			FROM
-				requests 
-			WHERE
-				author_id = $1%s
+				requests%s
 			LIMIT $%d
 			OFFSET $%d
 			`
 
 	offset := (pageNumber - 1) * pageSize
 
-	if status == "" {
-		query = fmt.Sprintf(query, status, 2, 3)
-		whereVal = append(whereVal, id, pageSize, offset)
+	if id == "" {
+		if status == "" {
+			query = fmt.Sprintf(query, "", 1, 2)
+			whereVal = append(whereVal, pageSize, offset)
+		} else {
+			query = fmt.Sprintf(query, " WHERE status = $1 ", 2, 3)
+			whereVal = append(whereVal, status, pageSize, offset)
+		}
 	} else {
-		query = fmt.Sprintf(query, " AND status = $2 ", 3, 4)
-		whereVal = append(whereVal, id, status, pageSize, offset)
+		if status == "" {
+			query = fmt.Sprintf(query, " WHERE author_id = $1 ", 2, 3)
+			whereVal = append(whereVal, id, pageSize, offset)
+		} else {
+			query = fmt.Sprintf(query, " WHERE author_id = $1 AND status = $2 ", 3, 4)
+			whereVal = append(whereVal, id, status, pageSize, offset)
+		}
 	}
 
 	rows, err := r.db.Query(query, whereVal...)

@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/cyberdr0id/referral/internal/context"
 	"github.com/cyberdr0id/referral/internal/service"
 )
 
@@ -20,6 +21,8 @@ const (
 	idParameter           = "id"
 	pageNumberParameter   = "page"
 	pageSizeParameter     = "size"
+	allParameter          = "all"
+	userIDParameter       = "user_id"
 
 	defaultPageNumber = 1
 	defaultPageSize   = 10
@@ -117,6 +120,7 @@ func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusUnauthorized)
 		return
 	}
+
 	accessToken, err := s.Auth.LogIn(request.Name, request.Password)
 	if errors.Is(err, service.ErrNoUser) {
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusUnauthorized)
@@ -161,19 +165,45 @@ func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 
 // GetRequests inputs all user requests.
 func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
-	rw.Header().Set("Content-Type", "application/json")
-
 	t := r.URL.Query().Get(statusParameter)
 	pageNumber := r.URL.Query().Get(pageNumberParameter)
 	pageSize := r.URL.Query().Get(pageSizeParameter)
 
-	pn, ps, err := ValidateGetRequestsRequest(t, pageNumber, pageSize)
+	userID, ok := context.GetUserID(r.Context())
+	if !ok {
+		sendResponse(rw, fmt.Errorf("cannot get user id from context"), http.StatusInternalServerError)
+		return
+	}
+
+	pn, ps, err := ValidateGetRequestsRequest(t, pageNumber, pageSize, userID)
 	if err != nil {
 		sendResponse(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	userRequests, err := s.Referral.GetRequests(r.Context(), t, pn, ps)
+	userRequests, err := s.Referral.GetRequests(userID, t, pn, ps)
+	if err != nil {
+		sendResponse(rw, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	sendResponse(rw, userRequests, http.StatusOK)
+}
+
+// GetAllRequests admin handler that returns list of all requests.
+func (s *Server) GetAllRequests(rw http.ResponseWriter, r *http.Request) {
+	t := r.URL.Query().Get(statusParameter)
+	pageNumber := r.URL.Query().Get(pageNumberParameter)
+	pageSize := r.URL.Query().Get(pageSizeParameter)
+	userID := r.URL.Query().Get(userIDParameter)
+
+	pn, ps, err := ValidateGetRequestsRequest(t, pageNumber, pageSize, userID)
+	if err != nil {
+		sendResponse(rw, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	userRequests, err := s.Referral.GetRequests(userID, t, pn, ps)
 	if err != nil {
 		sendResponse(rw, err.Error(), http.StatusInternalServerError)
 		return
@@ -184,8 +214,6 @@ func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 
 // DownloadCV downloads CV of a particular candidate.
 func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
-	rw.Header().Set("Content-Type", "application/json")
-
 	id := r.URL.Query().Get(idParameter)
 
 	if err := ValidateNumber(id); err != nil {
@@ -215,8 +243,6 @@ type UpdateRespone struct {
 
 // UpdateRequest updated status of request by id.
 func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
-	rw.Header().Set("Content-Type", "application/json")
-
 	var request UpdateRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
@@ -310,7 +336,7 @@ var requestsState = map[string]bool{
 }
 
 // ValidateGetRequestsRequest validates parameters of request of getting requests.
-func ValidateGetRequestsRequest(state, pageNumber, pageSize string) (int, int, error) {
+func ValidateGetRequestsRequest(state, pageNumber, pageSize, id string) (int, int, error) {
 	var pn int
 	var ps int
 
@@ -352,6 +378,14 @@ func ValidateGetRequestsRequest(state, pageNumber, pageSize string) (int, int, e
 		}
 	} else {
 		pn = defaultPageNumber
+	}
+
+	ok, err := regexp.MatchString(idExp, id)
+	if !ok {
+		return 0, 0, fmt.Errorf("%w: numeric parameter has bad format", ErrInvalidParameter)
+	}
+	if err != nil {
+		return 0, 0, fmt.Errorf("cannot validate input parameter: %w", err)
 	}
 
 	return pn, ps, nil
