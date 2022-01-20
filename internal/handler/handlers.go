@@ -170,15 +170,15 @@ func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 	pageNumber := r.URL.Query().Get(pageNumberParameter)
 	pageSize := r.URL.Query().Get(pageSizeParameter)
 
-	pn, ps, err := ValidateGetRequestsRequest(t, pageNumber, pageSize)
-	if err != nil {
-		sendResponse(rw, err.Error(), http.StatusBadRequest)
+	userID, ok := context.GetUserID(r.Context())
+	if !ok {
+		sendResponse(rw, fmt.Errorf("cannot get user id from context"), http.StatusInternalServerError)
 		return
 	}
 
-	userID, ok := context.GetUserID(r.Context())
-	if !ok {
-		sendResponse(rw, err.Error(), http.StatusInternalServerError)
+	pn, ps, err := ValidateGetRequestsRequest(t, pageNumber, pageSize, userID)
+	if err != nil {
+		sendResponse(rw, err.Error(), http.StatusBadRequest)
 		return
 	}
 
@@ -199,7 +199,7 @@ func (s *Server) GetAllRequests(rw http.ResponseWriter, r *http.Request) {
 	pageSize := r.URL.Query().Get(pageSizeParameter)
 	userID := r.URL.Query().Get(userIDParameter)
 
-	pn, ps, err := ValidateGetRequestsRequest(t, pageNumber, pageSize)
+	pn, ps, err := ValidateGetRequestsRequest(t, pageNumber, pageSize, userID)
 	if err != nil {
 		sendResponse(rw, err.Error(), http.StatusBadRequest)
 		return
@@ -342,7 +342,7 @@ var requestsState = map[string]bool{
 }
 
 // ValidateGetRequestsRequest validates parameters of request of getting requests.
-func ValidateGetRequestsRequest(state, pageNumber, pageSize string) (int, int, error) {
+func ValidateGetRequestsRequest(state, pageNumber, pageSize, id string) (int, int, error) {
 	var pn int
 	var ps int
 
@@ -384,6 +384,14 @@ func ValidateGetRequestsRequest(state, pageNumber, pageSize string) (int, int, e
 		}
 	} else {
 		pn = defaultPageNumber
+	}
+
+	ok, err := regexp.MatchString(idExp, id)
+	if !ok {
+		return 0, 0, fmt.Errorf("%w: numeric parameter has bad format", ErrInvalidParameter)
+	}
+	if err != nil {
+		return 0, 0, fmt.Errorf("cannot validate input parameter: %w", err)
 	}
 
 	return pn, ps, nil
