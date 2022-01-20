@@ -72,29 +72,6 @@ func (r *Repository) GetRequests(id, status string, pageNumber, pageSize int) ([
 	return requests, nil
 }
 
-// IsAdmin checks by user ID if user is admin.
-func (r *Repository) IsAdmin(userID string) (bool, error) {
-	var isAdmin bool
-
-	query := `
-		SELECT	
-			is_admin
-		FROM
-			users
-		WHERE 
-			id = $1`
-
-	err := r.db.QueryRow(query, userID).Scan(&isAdmin)
-	if errors.Is(err, sql.ErrNoRows) {
-		return false, ErrNoUser
-	}
-	if err != nil {
-		return false, fmt.Errorf("cannot check if user is admin: %w", err)
-	}
-
-	return isAdmin, nil
-}
-
 // AddCandidate adds submitted candidate.
 func (r *Repository) AddCandidate(userID, name, surname, fileID string) (string, error) {
 	var requestID string

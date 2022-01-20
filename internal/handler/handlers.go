@@ -120,6 +120,7 @@ func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusUnauthorized)
 		return
 	}
+
 	accessToken, err := s.Auth.LogIn(request.Name, request.Password)
 	if errors.Is(err, service.ErrNoUser) {
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusUnauthorized)
@@ -164,8 +165,6 @@ func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 
 // GetRequests inputs all user requests.
 func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
-	rw.Header().Set("Content-Type", "application/json")
-
 	t := r.URL.Query().Get(statusParameter)
 	pageNumber := r.URL.Query().Get(pageNumberParameter)
 	pageSize := r.URL.Query().Get(pageSizeParameter)
@@ -191,9 +190,8 @@ func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 	sendResponse(rw, userRequests, http.StatusOK)
 }
 
+// GetAllRequests admin handler that returns list of all requests.
 func (s *Server) GetAllRequests(rw http.ResponseWriter, r *http.Request) {
-	rw.Header().Set("Content-Type", "application/json")
-
 	t := r.URL.Query().Get(statusParameter)
 	pageNumber := r.URL.Query().Get(pageNumberParameter)
 	pageSize := r.URL.Query().Get(pageSizeParameter)
@@ -216,8 +214,6 @@ func (s *Server) GetAllRequests(rw http.ResponseWriter, r *http.Request) {
 
 // DownloadCV downloads CV of a particular candidate.
 func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
-	rw.Header().Set("Content-Type", "application/json")
-
 	id := r.URL.Query().Get(idParameter)
 
 	if err := ValidateNumber(id); err != nil {
@@ -247,8 +243,6 @@ type UpdateRespone struct {
 
 // UpdateRequest updated status of request by id.
 func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
-	rw.Header().Set("Content-Type", "application/json")
-
 	var request UpdateRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
