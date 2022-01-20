@@ -36,7 +36,7 @@ type SubmitCandidateRequest struct {
 	CandidateSurname string
 }
 
-// AddCandidate create request with candidate.
+// AddCandidate creates request with candidate.
 func (s *ReferralService) AddCandidate(ctx context.Context, request SubmitCandidateRequest) (string, error) {
 	userID, ok := mycontext.GetUserID(ctx)
 	if !ok {
