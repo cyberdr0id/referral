@@ -99,6 +99,7 @@ func (s *Server) SignUp(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
+		s.Logger.ErrorLogger.Println(err)
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
 		return
 	}
@@ -127,6 +128,7 @@ func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
+		s.Logger.ErrorLogger.Println(err)
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
 		return
 	}
@@ -138,7 +140,7 @@ func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 	file, _, err := r.FormFile(filenameParam)
 	if err != nil {
-		sendResponse(rw, err.Error(), http.StatusBadRequest)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
@@ -150,13 +152,14 @@ func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := ValidateCandidateSendingRequest(request); err != nil {
-		sendResponse(rw, err.Error(), http.StatusBadRequest)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
 
 	id, err := s.Referral.AddCandidate(r.Context(), request)
 	if err != nil {
-		sendResponse(rw, err.Error(), http.StatusInternalServerError)
+		s.Logger.ErrorLogger.Println(err)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
 		return
 	}
 
@@ -171,19 +174,21 @@ func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
 
 	userID, ok := context.GetUserID(r.Context())
 	if !ok {
+		s.Logger.ErrorLogger.Println(fmt.Errorf("cannot get user id from context"))
 		sendResponse(rw, fmt.Errorf("cannot get user id from context"), http.StatusInternalServerError)
 		return
 	}
 
 	pageNumberInt, pageSizeInt, err := ValidateGetRequestsRequest(status, pageNumber, pageSize, userID)
 	if err != nil {
-		sendResponse(rw, err.Error(), http.StatusBadRequest)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
 
 	userRequests, err := s.Referral.GetRequests(userID, status, pageNumberInt, pageSizeInt)
 	if err != nil {
-		sendResponse(rw, err.Error(), http.StatusInternalServerError)
+		s.Logger.ErrorLogger.Println(err)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
 		return
 	}
 
@@ -199,13 +204,14 @@ func (s *Server) GetAllRequests(rw http.ResponseWriter, r *http.Request) {
 
 	pageNumberInt, pageSizeInt, err := ValidateGetRequestsRequest(status, pageNumber, pageSize, userID)
 	if err != nil {
-		sendResponse(rw, err.Error(), http.StatusBadRequest)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
 
 	userRequests, err := s.Referral.GetRequests(userID, status, pageNumberInt, pageSizeInt)
 	if err != nil {
-		sendResponse(rw, err.Error(), http.StatusInternalServerError)
+		s.Logger.ErrorLogger.Println(err)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
 		return
 	}
 
@@ -223,6 +229,7 @@ func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 
 	link, err := s.Referral.DownloadFile(id)
 	if err != nil {
+		s.Logger.ErrorLogger.Println(err)
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
 		return
 	}
@@ -262,6 +269,7 @@ func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if err != nil {
+		s.Logger.ErrorLogger.Println(err)
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
 		return
 	}

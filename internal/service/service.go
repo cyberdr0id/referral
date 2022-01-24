@@ -9,7 +9,7 @@ import (
 )
 
 var (
-	// ErrNoUser handle an error when tyring to get non-database user.
+	// ErrNoUser handle an error when trying to get non-database user.
 	ErrNoUser = errors.New("user doesn't exists")
 
 	// ErrNoFile handle an error when user try to get non-database CV.
@@ -26,7 +26,7 @@ var (
 type Auth interface {
 	LogIn(name, password string) (string, error)
 	SignUp(name, password string) (string, error)
-	ParseToken(_token string) (*myjwt.Claims, error)
+	ParseToken(token string) (*myjwt.Claims, error)
 }
 
 // Referral presents a type of CV interaction.

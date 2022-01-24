@@ -9,12 +9,18 @@ import (
 	"github.com/cyberdr0id/referral/internal/service"
 	"github.com/cyberdr0id/referral/internal/storage"
 	"github.com/cyberdr0id/referral/pkg/jwt"
+	mylog "github.com/cyberdr0id/referral/pkg/log"
 	"github.com/spf13/viper"
 )
 
 func main() {
+	logger, err := mylog.NewLogger()
+	if err != nil {
+		log.Fatalf("error with logger creating: %s", err.Error())
+	}
+
 	if err := initConfig(); err != nil {
-		log.Fatalf("error while reading config: %s", err.Error())
+		logger.ErrorLogger.Fatalf("error while reading config: %s", err.Error())
 	}
 
 	config := repository.DatabaseConfig{
@@ -28,7 +34,7 @@ func main() {
 
 	db, err := repository.NewConnection(config)
 	if err != nil {
-		log.Fatalf("error while trying to connect to database: %s", err.Error())
+		logger.ErrorLogger.Fatalf("error while trying to connect to database: %s", err)
 	}
 
 	repo := repository.NewRepository(db)
@@ -43,16 +49,16 @@ func main() {
 
 	s3, err := storage.NewStorage(s3config)
 	if err != nil {
-		log.Fatal(err)
+		logger.ErrorLogger.Fatalf("cannot create new instance of object storage: %s", err)
 	}
 
 	authService := service.NewAuthService(repo, tm)
 	referralService := service.NewReferralService(repo, s3)
 
-	server := handler.NewServer(authService, referralService)
+	server := handler.NewServer(authService, referralService, logger)
 
 	if err := server.Run(viper.GetString("port"), server); err != nil {
-		log.Fatalf("error while starting server: %s", err.Error())
+		logger.ErrorLogger.Fatalf("error while starting server: %s", err)
 	}
 }
 

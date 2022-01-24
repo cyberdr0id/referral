@@ -208,7 +208,7 @@ func TestServer_SignUp(t *testing.T) {
 			auth := mock_service.NewMockAuth(ctrl)
 			tc.mock(auth, tc.serviceName, tc.servicePassword)
 
-			s := NewServer(auth, nil)
+			s := NewServer(auth, nil, nil)
 
 			w := httptest.NewRecorder()
 
@@ -360,7 +360,7 @@ func TestServer_LogIn(t *testing.T) {
 			auth := mock_service.NewMockAuth(ctrl)
 			tc.mock(auth, tc.serviceName, tc.servicePassword)
 
-			s := NewServer(auth, nil)
+			s := NewServer(auth, nil, nil)
 
 			w := httptest.NewRecorder()
 
