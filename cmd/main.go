@@ -2,19 +2,11 @@
 package main
 
 import (
-	"log"
-
 	"github.com/cyberdr0id/referral/internal/api"
-	mylog "github.com/cyberdr0id/referral/pkg/log"
 )
 
 func main() {
-	logger, err := mylog.NewLogger()
-	if err != nil {
-		log.Fatalf("error with logger creating: %s", err.Error())
-	}
-
-	if err := api.Start(logger); err != nil {
+	if logger, err := api.Start(); err != nil {
 		logger.ErrorLogger.Fatal(err)
 	}
 }

@@ -2,6 +2,7 @@ package api
 
 import (
 	"fmt"
+	"log"
 
 	"github.com/cyberdr0id/referral/internal/handler"
 	"github.com/cyberdr0id/referral/internal/repository"
@@ -20,9 +21,14 @@ func initConfig() error {
 }
 
 // Start starts API with initialization of necessary components.
-func Start(logger *mylog.Logger) error {
+func Start() (*mylog.Logger, error) {
+	logger, err := mylog.NewLogger()
+	if err != nil {
+		log.Fatalf("error with logger creating: %s", err.Error())
+	}
+
 	if err := initConfig(); err != nil {
-		return fmt.Errorf("error while reading config: %s", err.Error())
+		return &mylog.Logger{}, fmt.Errorf("error while reading config: %s", err.Error())
 	}
 
 	config := repository.DatabaseConfig{
@@ -36,7 +42,7 @@ func Start(logger *mylog.Logger) error {
 
 	db, err := repository.NewConnection(config)
 	if err != nil {
-		return fmt.Errorf("error while trying to connect to database: %s", err)
+		return &mylog.Logger{}, fmt.Errorf("error while trying to connect to database: %s", err)
 	}
 
 	repo := repository.NewRepository(db)
@@ -51,7 +57,7 @@ func Start(logger *mylog.Logger) error {
 
 	s3, err := storage.NewStorage(s3config)
 	if err != nil {
-		return fmt.Errorf("cannot create new instance of object storage: %s", err)
+		return &mylog.Logger{}, fmt.Errorf("cannot create new instance of object storage: %s", err)
 	}
 
 	authService := service.NewAuthService(repo, tm)
@@ -60,8 +66,8 @@ func Start(logger *mylog.Logger) error {
 	server := handler.NewServer(authService, referralService, logger)
 
 	if err := server.Run(viper.GetString("port"), server); err != nil {
-		return fmt.Errorf("error while starting server: %s", err)
+		return &mylog.Logger{}, fmt.Errorf("error while starting server: %s", err)
 	}
 
-	return nil
+	return logger, nil
 }
