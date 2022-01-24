@@ -19,7 +19,8 @@ const (
 	bearerScheme  = "Bearer"
 )
 
-func (s *Server) LogginMiddlewre(nextHandler http.Handler) http.Handler {
+// LoggingMiddlewre logs info about all endpoints.
+func (s *Server) LoggingMiddlewre(nextHandler http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
 		s.Logger.InfoLogger.Println(r.Host, r.URL, r.Method)
 		nextHandler.ServeHTTP(rw, r)
