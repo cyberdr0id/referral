@@ -36,6 +36,9 @@ func (s *AuthService) SignUp(name, password string) (string, error) {
 	}
 
 	id, err := s.repo.CreateUser(name, pass)
+	if errors.Is(err, repository.ErrUserAlreadyExists) {
+		return "", ErrUserAlreadyExists
+	}
 	if err != nil {
 		return "", fmt.Errorf("cannot create user: %w", err)
 	}
