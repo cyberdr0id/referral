@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/cyberdr0id/referral/internal/service"
+	"github.com/cyberdr0id/referral/pkg/log"
 	"github.com/gorilla/mux"
 )
 
@@ -15,6 +16,7 @@ type Server struct {
 	Router     *mux.Router
 	Auth       service.Auth
 	Referral   service.Referral
+	Logger     *log.Logger
 }
 
 // Run starts server.
@@ -31,11 +33,12 @@ func (s *Server) Run(port string, handler http.Handler) error {
 }
 
 // NewServer creates a new instance of type Server.
-func NewServer(auth service.Auth, referral service.Referral) *Server {
+func NewServer(auth service.Auth, referral service.Referral, log *log.Logger) *Server {
 	s := &Server{
 		Router:   mux.NewRouter(),
 		Auth:     auth,
 		Referral: referral,
+		Logger:   log,
 	}
 
 	s.InitRoutes()

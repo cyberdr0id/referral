@@ -19,6 +19,14 @@ const (
 	bearerScheme  = "Bearer"
 )
 
+// LoggingMiddlewre logs info about all endpoints.
+func (s *Server) LoggingMiddlewre(nextHandler http.Handler) http.Handler {
+	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {
+		s.Logger.InfoLogger.Println(r.Host, r.URL, r.Method)
+		nextHandler.ServeHTTP(rw, r)
+	})
+}
+
 // AdminMiddleware checks if user is admin.
 func (s *Server) AdminMiddleware(nextHandler http.Handler) http.Handler {
 	return http.HandlerFunc(func(rw http.ResponseWriter, r *http.Request) {

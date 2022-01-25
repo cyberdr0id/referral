@@ -3,6 +3,8 @@ package handler
 
 // InitRoutes initialize all endpoints.
 func (s *Server) InitRoutes() {
+	s.Router.Use(s.LoggingMiddlewre)
+
 	s.Router.HandleFunc("/auth/login", s.LogIn).Methods("POST")
 	s.Router.HandleFunc("/auth/signup", s.SignUp).Methods("POST")
 
