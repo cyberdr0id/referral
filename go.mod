@@ -41,4 +41,7 @@ require (
 	golang.org/x/tools v0.1.8 // indirect
 )
 
-require github.com/google/uuid v1.1.2 // indirect
+require (
+	github.com/DATA-DOG/go-sqlmock v1.5.0
+	github.com/google/uuid v1.1.2 // indirect
+)
