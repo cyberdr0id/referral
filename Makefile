@@ -1,4 +1,4 @@
-export TEST_CONTAINER_NAME=referral-test-container
+export TEST_CONTAINER_NAME=referral
 
 test.integration:
 	docker-compose -f docker-compose.yml up --build -d
