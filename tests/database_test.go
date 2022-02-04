@@ -21,6 +21,22 @@ const (
 	statusAccepted = "Accepted"
 )
 
+func makeRequest(s *ReferralAPISuite) (id string, requestID string) {
+	id, err := s.repo.CreateUser(defaultName, defaultPassword)
+	if err != nil {
+		s.FailNow(fmt.Errorf("cannot create user: %w", err).Error())
+	}
+	s.NoError(err)
+
+	requestID, err = s.repo.AddCandidate(id, defaultCandidateName, defaultCandidateSurname, defaultFileID)
+	if err != nil {
+		s.FailNow(fmt.Errorf("cannot add candidate: %w", err).Error())
+	}
+	s.NoError(err)
+
+	return id, requestID
+}
+
 func (s *ReferralAPISuite) TestCreateUser() {
 	_, err := s.repo.CreateUser(defaultName, defaultPassword)
 	if err != nil {
@@ -52,33 +68,12 @@ func (s *ReferralAPISuite) TestGetUser() {
 }
 
 func (s *ReferralAPISuite) TestAddCandidate() {
-	id, err := s.repo.CreateUser(defaultName, defaultPassword)
-	if err != nil {
-		s.FailNow(fmt.Errorf("cannot create user: %w", err).Error())
-	}
-	s.NoError(err)
-
-	_, err = s.repo.AddCandidate(id, defaultCandidateName, defaultCandidateSurname, defaultFileID)
-	if err != nil {
-		s.FailNow(fmt.Errorf("cannot add candidate: %w", err).Error())
-	}
-	s.NoError(err)
-
+	_, _ = makeRequest(s)
 	s.clearTables()
 }
 
 func (s *ReferralAPISuite) TestGetRequests() {
-	id, err := s.repo.CreateUser(defaultName, defaultPassword)
-	if err != nil {
-		s.FailNow(fmt.Errorf("cannot create user: %w", err).Error())
-	}
-	s.NoError(err)
-
-	_, err = s.repo.AddCandidate(id, defaultCandidateName, defaultCandidateSurname, defaultFileID)
-	if err != nil {
-		s.FailNow(fmt.Errorf("cannot add candidate: %w", err).Error())
-	}
-	s.NoError(err)
+	id, _ := makeRequest(s)
 
 	requests, err := s.repo.GetRequests(id, defaultStatus, defaultPageNumber, defaultPageSize)
 	if err != nil {
@@ -92,19 +87,9 @@ func (s *ReferralAPISuite) TestGetRequests() {
 }
 
 func (s *ReferralAPISuite) TestUpdateRequest() {
-	id, err := s.repo.CreateUser(defaultName, defaultPassword)
-	if err != nil {
-		s.FailNow(fmt.Errorf("cannot create user: %w", err).Error())
-	}
-	s.NoError(err)
+	_, requestID := makeRequest(s)
 
-	requestID, err := s.repo.AddCandidate(id, defaultCandidateName, defaultCandidateSurname, defaultFileID)
-	if err != nil {
-		s.FailNow(fmt.Errorf("cannot add candidate: %w", err).Error())
-	}
-	s.NoError(err)
-
-	err = s.repo.UpdateRequest(requestID, statusAccepted)
+	err := s.repo.UpdateRequest(requestID, statusAccepted)
 	if err != nil {
 		s.FailNow(fmt.Errorf("cannot update request: %w", err).Error())
 	}
@@ -114,17 +99,7 @@ func (s *ReferralAPISuite) TestUpdateRequest() {
 }
 
 func (s *ReferralAPISuite) TestGetCVID() {
-	id, err := s.repo.CreateUser(defaultName, defaultPassword)
-	if err != nil {
-		s.FailNow(fmt.Errorf("cannot create user: %w", err).Error())
-	}
-	s.NoError(err)
-
-	requestID, err := s.repo.AddCandidate(id, defaultCandidateName, defaultCandidateSurname, defaultFileID)
-	if err != nil {
-		s.FailNow(fmt.Errorf("cannot add candidate: %w", err).Error())
-	}
-	s.NoError(err)
+	_, requestID := makeRequest(s)
 
 	fileID, err := s.repo.GetCVID(requestID)
 	if err != nil {
