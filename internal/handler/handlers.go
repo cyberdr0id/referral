@@ -72,7 +72,11 @@ var ErrInvalidParameter = errors.New("invalid parameter")
 func sendResponse(w http.ResponseWriter, resp interface{}, code int) {
 	w.WriteHeader(code)
 	w.Header().Set("Content-Type", "application/json")
-	if err := json.NewEncoder(w).Encode(resp); err != nil {
+
+	encoder := json.NewEncoder(w)
+	encoder.SetEscapeHTML(false)
+
+	if err := encoder.Encode(resp); err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
