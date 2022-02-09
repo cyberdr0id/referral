@@ -8,9 +8,7 @@ const (
 	defaultName             = "username"
 	defaultPassword         = "password"
 	defaultIsAdmin          = false
-	defaultUserID           = "1"
 	defaultFileID           = "1"
-	defaultRequestID        = "1"
 	defaultStatus           = "Submitted"
 	defaultPageNumber       = 1
 	defaultPageSize         = 1

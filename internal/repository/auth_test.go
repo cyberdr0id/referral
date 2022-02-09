@@ -8,12 +8,7 @@ import (
 )
 
 const (
-	idColumn       = "id"
-	nameColumn     = "name"
-	passwordColumn = "password"
-	isAdminColumn  = "is_admin"
-	createdColumn  = "created"
-	updatedColumn  = "updated"
+	idColumn = "id"
 
 	defaultName     = "Denzel"
 	defaultPassword = "password"
