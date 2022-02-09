@@ -97,9 +97,9 @@ func (s *ReferralAPISuite) TestUpdateRequest() {
 }
 
 func (s *ReferralAPISuite) TestGetCVID() {
-	_, requestID := makeRequest(s)
+	userID, requestID := makeRequest(s)
 
-	fileID, err := s.repo.GetCVID(requestID)
+	fileID, err := s.repo.GetCVID(requestID, userID)
 	if err != nil {
 		s.FailNow(fmt.Errorf("cannot get id of cv: %w", err).Error())
 	}

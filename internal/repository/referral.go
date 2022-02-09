@@ -113,7 +113,7 @@ func (r *Repository) UpdateRequest(id, newState string) error {
 }
 
 // GetCVID returns cv file id from object storage.
-func (r *Repository) GetCVID(id string) (string, error) {
+func (r *Repository) GetCVID(candidateID, userID string) (string, error) {
 	var fileID string
 
 	query := `SELECT
@@ -123,7 +123,18 @@ func (r *Repository) GetCVID(id string) (string, error) {
 			  WHERE 
 			  	id = $1`
 
-	err := r.db.QueryRow(query, id).Scan(&fileID)
+	whereVal := []interface{}{
+		candidateID,
+	}
+
+	if userID != "" {
+		query = fmt.Sprintf("%s AND author_id = $2", query)
+		whereVal = append(whereVal, userID)
+	}
+
+	fmt.Println(query)
+
+	err := r.db.QueryRow(query, whereVal...).Scan(&fileID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", ErrNoFile
 	}
