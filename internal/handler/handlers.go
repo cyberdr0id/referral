@@ -23,6 +23,7 @@ const (
 	pageSizeParameter     = "size"
 	userIDParameter       = "user_id"
 
+	anyUserID         = ""
 	defaultPageNumber = 1
 	defaultPageSize   = 10
 )
@@ -230,7 +231,33 @@ func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	link, err := s.Referral.DownloadFile(id)
+	userID, ok := context.GetUserID(r.Context())
+	if !ok {
+		s.Logger.ErrorLogger.Println(fmt.Errorf("cannot get user id from context"))
+		sendResponse(rw, fmt.Errorf("cannot get user id from context"), http.StatusInternalServerError)
+		return
+	}
+
+	link, err := s.Referral.DownloadFile(id, userID)
+	if err != nil {
+		s.Logger.ErrorLogger.Println(err)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
+		return
+	}
+
+	sendResponse(rw, DownloadResponse{FileLink: link}, http.StatusOK)
+}
+
+//
+func (s *Server) DownloadAnyCV(rw http.ResponseWriter, r *http.Request) {
+	fileID := r.URL.Query().Get(idParameter)
+
+	if err := ValidateNumber(fileID); err != nil {
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
+		return
+	}
+
+	link, err := s.Referral.DownloadFile(fileID, anyUserID)
 	if err != nil {
 		s.Logger.ErrorLogger.Println(err)
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)

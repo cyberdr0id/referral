@@ -20,4 +20,5 @@ func (s *Server) InitRoutes() {
 
 	adminRouter.HandleFunc("/admin/references", s.UpdateRequest).Methods("PUT")
 	adminRouter.HandleFunc("/admin/references", s.GetAllRequests).Methods("GET")
+	adminRouter.HandleFunc("/admin/cvs", s.DownloadAnyCV).Methods("GET")
 }
