@@ -132,8 +132,6 @@ func (r *Repository) GetCVID(candidateID, userID string) (string, error) {
 		whereVal = append(whereVal, userID)
 	}
 
-	fmt.Println(query)
-
 	err := r.db.QueryRow(query, whereVal...).Scan(&fileID)
 	if errors.Is(err, sql.ErrNoRows) {
 		return "", ErrNoFile

@@ -23,6 +23,7 @@ const (
 	pageSizeParameter     = "size"
 	userIDParameter       = "user_id"
 
+	anyUserID         = ""
 	defaultPageNumber = 1
 	defaultPageSize   = 10
 )
@@ -249,14 +250,14 @@ func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 
 //
 func (s *Server) DownloadAnyCV(rw http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get(idParameter)
+	fileID := r.URL.Query().Get(idParameter)
 
-	if err := ValidateNumber(id); err != nil {
+	if err := ValidateNumber(fileID); err != nil {
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
 
-	link, err := s.Referral.DownloadFile(id, "")
+	link, err := s.Referral.DownloadFile(fileID, anyUserID)
 	if err != nil {
 		s.Logger.ErrorLogger.Println(err)
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
