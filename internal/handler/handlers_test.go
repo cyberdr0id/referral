@@ -256,7 +256,7 @@ func TestServer_LogIn(t *testing.T) {
 			},
 			expectedStatusCode: http.StatusOK,
 			expectedResponse: LogInResponse{
-				AccessToken: token,
+				Token: token,
 			},
 			isErrorExpeced:        false,
 			expectedErrorResponse: ErrorResponse{},
