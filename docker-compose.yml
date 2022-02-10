@@ -1,8 +1,15 @@
 version: '3'
 
 services:
+  main:
+    image: go-test
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   postgres:
     image: postgres:alpine
+    container_name: psql
     restart: always
     environment:
       - POSTGRES_USER=postgres
@@ -10,5 +17,10 @@ services:
       - POSTGRES_DB=CV
     volumes:
       - ./scripts/init/_main_script.sql:/docker-entrypoint-initdb.d/_main_script.sql
-    ports:
-      - 5432:5432
+#    ports:
+#      - 5432:5432
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
