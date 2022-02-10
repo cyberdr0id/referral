@@ -1,7 +1,7 @@
 port: "8000"
 
 db:
-  host: "localhost"
+  host: "postgres"
   user: "postgres"
   password: "Server1"
   dbname: "CV"
