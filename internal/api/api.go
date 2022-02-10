@@ -28,7 +28,7 @@ func Start() (*mylog.Logger, error) {
 	}
 
 	if err := initConfig(); err != nil {
-		return &mylog.Logger{}, fmt.Errorf("error while reading config: %s", err.Error())
+		return logger, fmt.Errorf("error while reading config: %s", err.Error())
 	}
 
 	config := repository.DatabaseConfig{
@@ -42,7 +42,7 @@ func Start() (*mylog.Logger, error) {
 
 	db, err := repository.NewConnection(config)
 	if err != nil {
-		return &mylog.Logger{}, fmt.Errorf("error while trying to connect to database: %s", err)
+		return logger, fmt.Errorf("error while trying to connect to database: %s", err)
 	}
 
 	repo := repository.NewRepository(db)
@@ -57,7 +57,7 @@ func Start() (*mylog.Logger, error) {
 
 	s3, err := storage.NewStorage(s3config)
 	if err != nil {
-		return &mylog.Logger{}, fmt.Errorf("cannot create new instance of object storage: %s", err)
+		return logger, fmt.Errorf("cannot create new instance of object storage: %s", err)
 	}
 
 	authService := service.NewAuthService(repo, tm)
@@ -66,7 +66,7 @@ func Start() (*mylog.Logger, error) {
 	server := handler.NewServer(authService, referralService, logger)
 
 	if err := server.Run(viper.GetString("port"), server); err != nil {
-		return &mylog.Logger{}, fmt.Errorf("error while starting server: %s", err)
+		return logger, fmt.Errorf("error while starting server: %s", err)
 	}
 
 	return logger, nil
