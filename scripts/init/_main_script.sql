@@ -20,10 +20,10 @@ CREATE TABLE IF NOT EXISTS Requests
 	candidate_surname VARCHAR NOT NULL,
 	cv_file_id VARCHAR NOT NULL,
 	status VARCHAR CHECK (
-		Status = 'Accepted' OR
-		Status = 'Rejected' OR
-		Status = 'Submitted'
-	) DEFAULT 'Submitted',
+		Status = 'accepted' OR
+		Status = 'rejected' OR
+		Status = 'submitted'
+	) DEFAULT 'submitted',
 	created TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	updated TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 	CONSTRAINT fkUser

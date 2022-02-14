@@ -21,44 +21,12 @@ const (
 	idParameter           = "id"
 	pageNumberParameter   = "page"
 	pageSizeParameter     = "size"
-	allParameter          = "all"
 	userIDParameter       = "user_id"
 
+	anyUserID         = ""
 	defaultPageNumber = 1
 	defaultPageSize   = 10
 )
-
-// LogInRequest type that presents data for authorization.
-type LogInRequest struct {
-	Name     string `json:"name"`
-	Password string `json:"password"`
-}
-
-// SignUpRequest type that presents data for registration.
-type SignUpRequest struct {
-	Name     string `json:"name"`
-	Password string `json:"password"`
-}
-
-// CandidateSendingResponse type that presents ID of sent candidate.
-type CandidateSendingResponse struct {
-	CandidateID string `json:"candidateid"`
-}
-
-// DownloadResponse presents a type which contains link to file for download candidate cv.
-type DownloadResponse struct {
-	FileLink string `json:"filelink"`
-}
-
-// LogInResponse type presents response after successful authorization.
-type LogInResponse struct {
-	AccessToken string `json:"accessToken"`
-}
-
-// SignUpResponse type presents response after successful registration.
-type SignUpResponse struct {
-	ID string `json:"id"`
-}
 
 // ErrorResponse presents a custom error type for error response.
 type ErrorResponse struct {
@@ -70,8 +38,8 @@ var ErrInvalidParameter = errors.New("invalid parameter")
 
 // sendResponse sends resposne with specified object in body.
 func sendResponse(w http.ResponseWriter, resp interface{}, code int) {
-	w.WriteHeader(code)
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(code)
 
 	encoder := json.NewEncoder(w)
 	encoder.SetEscapeHTML(false)
@@ -80,6 +48,17 @@ func sendResponse(w http.ResponseWriter, resp interface{}, code int) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+}
+
+// SignUpRequest type that presents data for registration.
+type SignUpRequest struct {
+	Name     string `json:"name"`
+	Password string `json:"password"`
+}
+
+// SignUpResponse type presents response after successful registration.
+type SignUpResponse struct {
+	ID string `json:"id"`
 }
 
 // SignUp registers user.
@@ -111,6 +90,17 @@ func (s *Server) SignUp(rw http.ResponseWriter, r *http.Request) {
 	sendResponse(rw, SignUpResponse{ID: id}, http.StatusCreated)
 }
 
+// LogInRequest type that presents data for authorization.
+type LogInRequest struct {
+	Name     string `json:"name"`
+	Password string `json:"password"`
+}
+
+// LogInResponse type presents response after successful authorization.
+type LogInResponse struct {
+	Token string `json:"token"`
+}
+
 // LogIn logs in user
 func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 	var request LogInRequest
@@ -126,7 +116,7 @@ func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, err := s.Auth.LogIn(request.Name, request.Password)
+	token, err := s.Auth.LogIn(request.Name, request.Password)
 	if errors.Is(err, service.ErrNoUser) {
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusUnauthorized)
 		return
@@ -137,7 +127,12 @@ func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sendResponse(rw, LogInResponse{AccessToken: accessToken}, http.StatusOK)
+	sendResponse(rw, LogInResponse{Token: token}, http.StatusOK)
+}
+
+// CandidateSendingResponse type that presents ID of sent candidate.
+type CandidateSendingResponse struct {
+	CandidateID string `json:"id"`
 }
 
 // SendCandidate sends candidate info and his cv.
@@ -172,7 +167,7 @@ func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 
 // GetRequests outputs all user requests.
 func (s *Server) GetRequests(rw http.ResponseWriter, r *http.Request) {
-	status := r.URL.Query().Get(statusParameter)
+	status := strings.ToLower(r.URL.Query().Get(statusParameter))
 	pageNumber := r.URL.Query().Get(pageNumberParameter)
 	pageSize := r.URL.Query().Get(pageSizeParameter)
 
@@ -222,6 +217,11 @@ func (s *Server) GetAllRequests(rw http.ResponseWriter, r *http.Request) {
 	sendResponse(rw, userRequests, http.StatusOK)
 }
 
+// DownloadResponse presents a type which contains link to file for download candidate cv.
+type DownloadResponse struct {
+	FileLink string `json:"link"`
+}
+
 // DownloadCV downloads CV of a particular candidate.
 func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get(idParameter)
@@ -231,7 +231,33 @@ func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	link, err := s.Referral.DownloadFile(id)
+	userID, ok := context.GetUserID(r.Context())
+	if !ok {
+		s.Logger.ErrorLogger.Println(fmt.Errorf("cannot get user id from context"))
+		sendResponse(rw, fmt.Errorf("cannot get user id from context"), http.StatusInternalServerError)
+		return
+	}
+
+	link, err := s.Referral.DownloadFile(id, userID)
+	if err != nil {
+		s.Logger.ErrorLogger.Println(err)
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
+		return
+	}
+
+	sendResponse(rw, DownloadResponse{FileLink: link}, http.StatusOK)
+}
+
+//
+func (s *Server) DownloadAnyCV(rw http.ResponseWriter, r *http.Request) {
+	fileID := r.URL.Query().Get(idParameter)
+
+	if err := ValidateNumber(fileID); err != nil {
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
+		return
+	}
+
+	link, err := s.Referral.DownloadFile(fileID, anyUserID)
 	if err != nil {
 		s.Logger.ErrorLogger.Println(err)
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
@@ -267,7 +293,7 @@ func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := s.Referral.UpdateRequest(request.ID, request.NewStatus)
+	err := s.Referral.UpdateRequest(request.ID, strings.ToLower(request.NewStatus))
 	if errors.Is(err, service.ErrNoResult) {
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
@@ -278,7 +304,7 @@ func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sendResponse(rw, UpdateRespone{Message: fmt.Sprintf("request status updated to '%s'", request.NewStatus)}, http.StatusOK)
+	sendResponse(rw, UpdateRespone{Message: fmt.Sprintf("request status with %s ID has been updated", request.ID)}, http.StatusOK)
 }
 
 // ValidateUpdateRequest validates data before request update.
@@ -287,13 +313,13 @@ func (r *UpdateRequest) ValidateUpdateRequest() error {
 		return fmt.Errorf("%w: request status", ErrInvalidParameter)
 	}
 
-	idExp := "^[1-9]\\d*"
+	idExp := "^([1-9])\\d*$"
 	ok, err := regexp.MatchString(idExp, r.ID)
 	if !ok {
-		return fmt.Errorf("%w: numeric parameter has bad format", ErrInvalidParameter)
+		return fmt.Errorf("%w: id has bad format", ErrInvalidParameter)
 	}
 	if err != nil {
-		return fmt.Errorf("cannot validate input parameter: %w", err)
+		return fmt.Errorf("cannot validate id parameter: %w", err)
 	}
 
 	return nil
@@ -310,11 +336,11 @@ func (r *SignUpRequest) ValidateSignUpRequest() error {
 	}
 
 	if len(r.Name) < 6 || len(r.Name) > 18 {
-		return fmt.Errorf("%w: wrong length", ErrInvalidParameter)
+		return fmt.Errorf("%w: name must be between 6 and 18 symbols", ErrInvalidParameter)
 	}
 
 	if len(r.Password) < 6 || len(r.Password) > 18 {
-		return fmt.Errorf("%w: wrong length", ErrInvalidParameter)
+		return fmt.Errorf("%w: password must be between 6 and 18 symbols", ErrInvalidParameter)
 	}
 
 	return nil
@@ -339,7 +365,7 @@ func ValidateCandidateSendingRequest(r service.SubmitCandidateRequest) error {
 		return fmt.Errorf("%w: wrong length", ErrInvalidParameter)
 	}
 
-	nameSurnameExp := "(^[A-Za-zА-Яа-я]{2,16})?([ ]{0,1})([A-Za-zА-Яа-я]{2,16})?"
+	nameSurnameExp := "^(^[A-Za-zА-Яа-я]{2,16})?$"
 	isValid, _ := regexp.MatchString(nameSurnameExp, r.CandidateName)
 	if !isValid {
 		return fmt.Errorf("%w: name has invalid format", ErrInvalidParameter)
@@ -374,15 +400,15 @@ func ValidateGetRequestsRequest(status, pageNumber, pageSize, id string) (int, i
 	if pageSize != "" {
 		ok, err := regexp.MatchString(idExp, pageSize)
 		if !ok {
-			return 0, 0, fmt.Errorf("%w: numeric parameter has bad format", ErrInvalidParameter)
+			return 0, 0, fmt.Errorf("%w: page size has bad format", ErrInvalidParameter)
 		}
 		if err != nil {
-			return 0, 0, fmt.Errorf("cannot validate input parameter: %w", err)
+			return 0, 0, fmt.Errorf("cannot validate page size: %w", err)
 		}
 
 		ps, err = strconv.Atoi(pageSize)
 		if err != nil {
-			return 0, 0, fmt.Errorf("cannot conver page number to int: %w", err)
+			return 0, 0, fmt.Errorf("cannot conver page size to int: %w", err)
 		}
 	} else {
 		ps = defaultPageSize
@@ -391,49 +417,42 @@ func ValidateGetRequestsRequest(status, pageNumber, pageSize, id string) (int, i
 	if pageNumber != "" {
 		ok, err := regexp.MatchString(idExp, pageNumber)
 		if !ok {
-			return 0, 0, fmt.Errorf("%w: numeric parameter has bad format", ErrInvalidParameter)
+			return 0, 0, fmt.Errorf("%w: page number has bad format", ErrInvalidParameter)
 		}
 		if err != nil {
-			return 0, 0, fmt.Errorf("cannot validate input parameter: %w", err)
+			return 0, 0, fmt.Errorf("cannot validate page number: %w", err)
 		}
 
 		pn, err = strconv.Atoi(pageNumber)
 		if err != nil {
-			return 0, 0, fmt.Errorf("cannot convert page size to integer: %w", err)
+			return 0, 0, fmt.Errorf("cannot convert page number to integer: %w", err)
 		}
 	} else {
 		pn = defaultPageNumber
 	}
 
-	ok, err := regexp.MatchString(idExp, id)
-	if !ok {
-		return 0, 0, fmt.Errorf("%w: numeric parameter has bad format", ErrInvalidParameter)
-	}
-	if err != nil {
-		return 0, 0, fmt.Errorf("cannot validate input parameter: %w", err)
+	if id != "" {
+		ok, err := regexp.MatchString(idExp, id)
+		if !ok {
+			return 0, 0, fmt.Errorf("%w: user id has bad format", ErrInvalidParameter)
+		}
+		if err != nil {
+			return 0, 0, fmt.Errorf("cannot validate id parameter: %w", err)
+		}
 	}
 
 	return pn, ps, nil
 }
 
-// ValidateRequestStatus validates data for request filtering.
-func ValidateRequestStatus(status string) error {
-	if !requestsStatus[strings.ToLower(status)] {
-		return fmt.Errorf("%w: request status", ErrInvalidParameter)
-	}
-
-	return nil
-}
-
 // ValidateNumber checks if parameter is number.
 func ValidateNumber(id string) error {
-	idExp := "^[1-9]\\d*"
+	idExp := "^([1-9])\\d*$"
 	ok, err := regexp.MatchString(idExp, id)
 	if !ok {
-		return fmt.Errorf("%w: numeric parameter has bad format", ErrInvalidParameter)
+		return fmt.Errorf("%w: id has bad format", ErrInvalidParameter)
 	}
 	if err != nil {
-		return fmt.Errorf("cannot validate input parameter: %w", err)
+		return fmt.Errorf("cannot validate id parameter: %w", err)
 	}
 
 	return nil

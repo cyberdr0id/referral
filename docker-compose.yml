@@ -17,6 +17,7 @@ services:
       - net
 
   postgres:
+    container_name: referral
     image: postgres:alpine
     container_name: psql
     restart: always

@@ -69,8 +69,8 @@ func (s *ReferralService) GetRequests(userID, status string, pageNumber, pageSiz
 }
 
 // DownloadFile downloads file from object storage.
-func (s *ReferralService) DownloadFile(candidateID string) (string, error) {
-	fileID, err := s.repo.GetCVID(candidateID)
+func (s *ReferralService) DownloadFile(candidateID string, userID string) (string, error) {
+	fileID, err := s.repo.GetCVID(candidateID, userID)
 	if err != nil {
 		return "", fmt.Errorf("cannot get file id from object storage: %w", err)
 	}
