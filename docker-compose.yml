@@ -6,10 +6,10 @@ networks:
 
 services:
   referral:
-    image: go-test
-    container_name: referral
+    image: referral
+    container_name: referral-api
     ports:
-      - 8001:8000
+      - "8001:8000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -17,7 +17,6 @@ services:
       - net
 
   postgres:
-    container_name: referral
     image: postgres:alpine
     container_name: psql
     restart: always
