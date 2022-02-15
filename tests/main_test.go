@@ -34,7 +34,7 @@ func (s *ReferralAPISuite) SetupSuite() {
 		User:         viper.GetString("db.user"),
 		Password:     viper.GetString("db.password"),
 		DatabaseName: viper.GetString("db.dbname"),
-		Port:         viper.GetString("db.test_port"),
+		Port:         viper.GetString("db.port"),
 		SSLMode:      viper.GetString("db.sslmode"),
 	}
 

@@ -5,21 +5,6 @@ networks:
     driver: bridge
 
 services:
-  tests:
-    image: postgres:alpine
-    container_name: tests
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=Server1
-      - POSTGRES_DB=CV
-    volumes:
-      - ./scripts/init/_main_script.sql:/docker-entrypoint-initdb.d/_main_script.sql
-    ports:
-      - 5432:5432
-    depends_on:
-      postgres:
-          condition: service_healthy
-
   referral:
     image: referral
     container_name: referral-api

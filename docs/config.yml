@@ -1,12 +1,11 @@
 port: "8000"
 
 db:
-  host: "postgres"
+  host: "localhost"
   user: "postgres"
   password: "Server1"
   dbname: "CV"
   port: "5433"
-  test_port: "5433"
   sslmode: "disable"
 
 jwt:
