@@ -1,0 +1,20 @@
+name: testing
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  testing:
+    name: testing
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Execute integration tests
+        uses: go test -v ./tests
+
+      - name: Execute unit tests
+        uses: go test -v ./internal/*
