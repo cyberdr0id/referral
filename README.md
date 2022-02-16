@@ -1,7 +1,7 @@
 # cv-web-service
 Status of last deployment: <br>
-<img src="https://github.com/cyberdr0id/test/workflows/testing/badge.svg?branch=main"><br>
-<img src="https://github.com/cyberdr0id/test/workflows/build-push/badge.svg?branch=main"><br>
+<img src="https://github.com/cyberdr0id/test/workflows/testing/badge.svg?branch=main">
+<img src="https://github.com/cyberdr0id/test/workflows/build-push/badge.svg?branch=main">
 <img src="https://github.com/cyberdr0id/test/workflows/lint/badge.svg?branch=main"><br>
 
 ## Web service for referencing candidates  
