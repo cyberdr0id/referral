@@ -26,7 +26,9 @@ jobs:
         run : docker build -t referral .
 
       - name: Tag image
-        run : docker tag referral referral:${{steps.vars.outputs.tag}}, referral:latest
+        run : |
+          docker tag referral:latest referral:${{steps.vars.outputs.tag}}
+          docker tag referral:latest referral
 
       - name: Push image
         run : docker push referral
