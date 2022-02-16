@@ -27,8 +27,8 @@ jobs:
 
       - name: Tag image
         run : |
-          docker tag referral:latest ${{ secrets.DOCKERHUB_USERNAME }}/referral:${{steps.vars.outputs.tag}}
-          docker tag referral:latest ${{ secrets.DOCKERHUB_USERNAME }}/referral
+          docker tag referral ${{ secrets.DOCKERHUB_USERNAME }}/referral:${{steps.vars.outputs.tag}}
+          docker tag referral ${{ secrets.DOCKERHUB_USERNAME }}/referral:latest
 
       - name: Push image
         run : docker push ${{ secrets.DOCKERHUB_USERNAME }}/referral:latest
