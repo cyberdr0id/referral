@@ -12,6 +12,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+        
+      - name: Create application image
+        run : docker build -t referral .
 
       - name: Execute docker-compose
         run : docker-compose up
