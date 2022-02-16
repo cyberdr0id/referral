@@ -3,12 +3,13 @@ name: build-push
 on:
   pull_request:
     branches:
-      - 'main'
+      - main
 
 jobs:
   build-push:
     runs-on: ubuntu-latest
     steps:
+
       - name: Checkout code
         uses: actions/checkout@v2
 
@@ -18,20 +19,9 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Get shrt commit sha
+      - name: Get short commit sha
         id: vars
         run: echo ::set-output name=tag::$(echo ${GITHUB_SHA::7})
-
-#      - name: Build app image
-#        run : docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/referral .
-#
-#      - name: Tag image
-#        run : |
-#          docker tag referral ${{ secrets.DOCKERHUB_USERNAME }}/referral:${{steps.vars.outputs.tag}}
-#          docker tag referral ${{ secrets.DOCKERHUB_USERNAME }}/referral:latest
-#
-#      - name: Push image
-#        run : docker push ${{ secrets.DOCKERHUB_USERNAME }}/referral:latest
 
       - name: Build and push
         uses: docker/build-push-action@v2
