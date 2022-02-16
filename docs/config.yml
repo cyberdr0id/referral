@@ -5,7 +5,7 @@ db:
   user: "postgres"
   password: "Server1"
   dbname: "CV"
-  port: "5433"
+  port: "5432"
   sslmode: "disable"
 
 jwt:

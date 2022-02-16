@@ -1,9 +1,5 @@
 version: '3'
 
-networks:
-  net:
-    driver: bridge
-
 services:
   referral:
     image: referral
@@ -13,8 +9,6 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-    networks:
-      - net
 
   postgres:
     image: postgres:alpine
@@ -24,12 +18,12 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=Server1
       - POSTGRES_DB=CV
+    ports:
+        - "5432:5432"
     volumes:
       - ./scripts/init/_main_script.sql:/docker-entrypoint-initdb.d/_main_script.sql
     healthcheck:
       test: ["CMD", "pg_isready", "-U", "postgres"]
       interval: 10s
       timeout: 5s
-      retries: 5
-    networks:
-      - net
+      retries: 5    
