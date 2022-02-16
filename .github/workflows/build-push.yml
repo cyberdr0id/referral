@@ -22,19 +22,19 @@ jobs:
         id: vars
         run: echo ::set-output name=tag::$(echo ${GITHUB_SHA::7})
 
-      - name: Build app image
-        run : docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/referral .
+#      - name: Build app image
+#        run : docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/referral .
+#
+#      - name: Tag image
+#        run : |
+#          docker tag referral ${{ secrets.DOCKERHUB_USERNAME }}/referral:${{steps.vars.outputs.tag}}
+#          docker tag referral ${{ secrets.DOCKERHUB_USERNAME }}/referral:latest
+#
+#      - name: Push image
+#        run : docker push ${{ secrets.DOCKERHUB_USERNAME }}/referral:latest
 
-      - name: Tag image
-        run : |
-          docker tag referral ${{ secrets.DOCKERHUB_USERNAME }}/referral:${{steps.vars.outputs.tag}}
-          docker tag referral ${{ secrets.DOCKERHUB_USERNAME }}/referral:latest
-
-      - name: Push image
-        run : docker push ${{ secrets.DOCKERHUB_USERNAME }}/referral:latest
-
-#      - name: Build and push
-#        uses: docker/build-push-action@v2
-#        with:
-#          push: true
-#          # tags: referral:${{steps.vars.outputs.tag}}, referral:latest
+      - name: Build and push
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          tags: ${{ secrets.DOCKERHUB_USERNAME }}/referral:${{steps.vars.outputs.tag}}, ${{ secrets.DOCKERHUB_USERNAME }}/referral:latest
