@@ -23,7 +23,7 @@ jobs:
         run: echo ::set-output name=tag::$(echo ${GITHUB_SHA::7})
 
       - name: Build app image
-        run : docker build -t referral -f  .
+        run : docker build -t referral .
 
       - name: Tag image
         run : docker tag referral referral:${{steps.vars.outputs.tag}}, referral:latest
