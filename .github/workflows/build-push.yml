@@ -20,11 +20,17 @@ jobs:
         id: vars
         run: echo ::set-output name=tag::$(echo ${GITHUB_SHA::7})
 
-      - name: Tagging image
-        run : docker tag referral referral:${{steps.vars.outputs.tag}}
+      - name: Build app image
+        run : docker build -t referral .
 
-      - name: Build and push
-        uses: docker/build-push-action@v2
-        with:
-          push: true
-          # tags: referral:${{steps.vars.outputs.tag}}, referral:latest
+      - name: Tag image
+        run : docker tag referral referral:${{steps.vars.outputs.tag}}, referral:latest
+
+      - name: Push image
+        run : docker push referral
+
+#      - name: Build and push
+#        uses: docker/build-push-action@v2
+#        with:
+#          push: true
+#          # tags: referral:${{steps.vars.outputs.tag}}, referral:latest
