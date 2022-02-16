@@ -23,15 +23,15 @@ jobs:
         run: echo ::set-output name=tag::$(echo ${GITHUB_SHA::7})
 
       - name: Build app image
-        run : docker build -t referral .
+        run : docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/referral .
 
       - name: Tag image
         run : |
-          docker tag referral:latest referral:${{steps.vars.outputs.tag}}
-          docker tag referral:latest referral
+          docker tag referral:latest ${{ secrets.DOCKERHUB_USERNAME }}/referral:${{steps.vars.outputs.tag}}
+          docker tag referral:latest ${{ secrets.DOCKERHUB_USERNAME }}/referral
 
       - name: Push image
-        run : docker push referral
+        run : docker push ${{ secrets.DOCKERHUB_USERNAME }}/referral:latest
 
 #      - name: Build and push
 #        uses: docker/build-push-action@v2
