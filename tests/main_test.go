@@ -21,21 +21,26 @@ func TestReferralAPISuite(t *testing.T) {
 	suite.Run(t, new(ReferralAPISuite))
 }
 
-func (s *ReferralAPISuite) SetupSuite() {
+func initConfig() error {
 	viper.AddConfigPath("../docs")
-	viper.SetConfigName("config")
+	viper.SetConfigName("app")
+	viper.SetConfigType("env")
 
-	if err := viper.ReadInConfig(); err != nil {
+	return viper.ReadInConfig()
+}
+
+func (s *ReferralAPISuite) SetupSuite() {
+	if err := initConfig(); err != nil {
 		s.FailNow(fmt.Errorf("cannot read application config: %w", err).Error())
 	}
 
 	config := repository.DatabaseConfig{
-		Host:         viper.GetString("db.host"),
-		User:         viper.GetString("db.user"),
-		Password:     viper.GetString("db.password"),
-		DatabaseName: viper.GetString("db.dbname"),
-		Port:         viper.GetString("db.port"),
-		SSLMode:      viper.GetString("db.sslmode"),
+		Host:         viper.GetString("DB_HOST"),
+		User:         viper.GetString("DB_USER"),
+		Password:     viper.GetString("DB_PASSWORD"),
+		DatabaseName: viper.GetString("DB_NAME"),
+		Port:         viper.GetString("DB_PORT"),
+		SSLMode:      viper.GetString("DB_SSLMODE"),
 	}
 
 	db, err := repository.NewConnection(config)

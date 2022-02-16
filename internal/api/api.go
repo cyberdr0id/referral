@@ -15,7 +15,8 @@ import (
 
 func initConfig() error {
 	viper.AddConfigPath("docs")
-	viper.SetConfigName("config")
+	viper.SetConfigName("app")
+	viper.SetConfigType("env")
 
 	return viper.ReadInConfig()
 }
@@ -32,12 +33,12 @@ func Start() (*mylog.Logger, error) {
 	}
 
 	config := repository.DatabaseConfig{
-		Host:         viper.GetString("db.host"),
-		User:         viper.GetString("db.user"),
-		Password:     viper.GetString("db.password"),
-		DatabaseName: viper.GetString("db.dbname"),
-		Port:         viper.GetString("db.port"),
-		SSLMode:      viper.GetString("db.sslmode"),
+		Host:         viper.GetString("DB_HOST"),
+		User:         viper.GetString("DB_USER"),
+		Password:     viper.GetString("DB_PASSWORD"),
+		DatabaseName: viper.GetString("DB_NAME"),
+		Port:         viper.GetString("DB_PORT"),
+		SSLMode:      viper.GetString("DB_SSLMODE"),
 	}
 
 	db, err := repository.NewConnection(config)
@@ -46,13 +47,16 @@ func Start() (*mylog.Logger, error) {
 	}
 
 	repo := repository.NewRepository(db)
-	tm := jwt.NewTokenManager(viper.GetString("jwt.key"), viper.GetInt("jwt.expiryTime"))
+	tm := jwt.NewTokenManager(
+		viper.GetString("JWT_KEY"),
+		viper.GetInt("JWT_EXPIRY_TIME"),
+	)
 
 	s3config := &storage.StorageConfig{
-		Bucket:      viper.GetString("aws.bucket"),
-		Region:      viper.GetString("aws.region"),
-		AccessKey:   viper.GetString("aws.accessKey"),
-		AccessKeyID: viper.GetString("aws.accessKeyID"),
+		Bucket:      viper.GetString("AWS_BUCKET"),
+		Region:      viper.GetString("AWS_REGION"),
+		AccessKey:   viper.GetString("AWS_ACCESS_KEY"),
+		AccessKeyID: viper.GetString("AWS_ACCESS_KEY_ID"),
 	}
 
 	s3, err := storage.NewStorage(s3config)
@@ -65,7 +69,7 @@ func Start() (*mylog.Logger, error) {
 
 	server := handler.NewServer(authService, referralService, logger)
 
-	if err := server.Run(viper.GetString("port"), server); err != nil {
+	if err := server.Run(viper.GetString("APP_PORT"), server); err != nil {
 		return logger, fmt.Errorf("error while starting server: %s", err)
 	}
 
