@@ -17,7 +17,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Checking github SHA
-        run : echo $GITHUB_SHA:0:7
+        run : echo ${GITHUB_SHA::7}
 
 #      - name: Build and push
 #        uses: docker/build-push-action@v2
