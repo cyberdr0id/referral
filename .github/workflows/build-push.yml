@@ -24,6 +24,8 @@ jobs:
         run: |
           echo "::set-output name=tag::$(git rev-parse --short HEAD)"
           git rev-parse --short HEAD
+          echo ${GITHUB_SHA}
+          echo ${{ github.sha }}
 
       - name: Build and push
         uses: docker/build-push-action@v2
