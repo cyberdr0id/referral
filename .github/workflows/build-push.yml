@@ -21,7 +21,7 @@ jobs:
 
       - name: Get short commit sha
         id: vars
-        run: echo ::set-output name=tag::$(echo ${GITHUB_SHA::7})
+        run: echo ::set-output name=tag::$(git rev-parse --short HEAD)
 
       - name: Build and push
         uses: docker/build-push-action@v2
