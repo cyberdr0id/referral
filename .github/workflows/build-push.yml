@@ -16,8 +16,11 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Checking github SHA
+        run : echo ${GITHUB_SHA::7}
+
       - name: Build and push
         uses: docker/build-push-action@v2
         with:
           push: true
-          tags: referral:$GITHUB_SHA:0:7, referral:latest
+          tags: referral:${GITHUB_SHA::7}, referral:latest
