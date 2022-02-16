@@ -3,6 +3,7 @@ package api
 import (
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/cyberdr0id/referral/internal/handler"
 	"github.com/cyberdr0id/referral/internal/repository"
@@ -14,9 +15,9 @@ import (
 )
 
 func initConfig() error {
-	viper.AddConfigPath("docs")
-	viper.SetConfigName("app")
+	viper.AddConfigPath("./")
 	viper.SetConfigType("env")
+	viper.SetConfigFile(".env")
 
 	return viper.ReadInConfig()
 }
@@ -53,10 +54,10 @@ func Start() (*mylog.Logger, error) {
 	)
 
 	s3config := &storage.StorageConfig{
-		Bucket:      viper.GetString("AWS_BUCKET"),
-		Region:      viper.GetString("AWS_REGION"),
-		AccessKey:   viper.GetString("AWS_ACCESS_KEY"),
-		AccessKeyID: viper.GetString("AWS_ACCESS_KEY_ID"),
+		Bucket:      os.Getenv("AWS_BUCKET"),
+		Region:      os.Getenv("AWS_REGION"),
+		AccessKey:   os.Getenv("AWS_ACCESS_KEY"),
+		AccessKeyID: os.Getenv("AWS_ACCESS_KEY_ID"),
 	}
 
 	s3, err := storage.NewStorage(s3config)

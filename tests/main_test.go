@@ -22,8 +22,8 @@ func TestReferralAPISuite(t *testing.T) {
 }
 
 func initConfig() error {
-	viper.AddConfigPath("../docs")
-	viper.SetConfigName("app")
+	viper.AddConfigPath("../.")
+	viper.SetConfigName(".env")
 	viper.SetConfigType("env")
 
 	return viper.ReadInConfig()
