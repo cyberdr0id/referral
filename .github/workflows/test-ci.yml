@@ -5,6 +5,12 @@ on:
     branches:
       - main
 
+env:
+  DB_HOST: localhost
+  DB_USER: postgres
+  DB_PASSWORD: postgres
+  DB_NAME: CV
+
 jobs:
   testing:
     name: testing
@@ -13,9 +19,9 @@ jobs:
       postgres:
         image: postgres:alpine
         env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: Server1
-          POSTGRES_DB: CV
+          POSTGRES_USER: ${{env.DB_USER}}
+          POSTGRES_PASSWORD: ${{env.DB_PASSWORD}}
+          POSTGRES_DB: ${{env.DB_NAME}}
         ports:
           - 5432:5432
         options: >-
@@ -29,9 +35,9 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Create database
-        run: psql -h localhost -U postgres -d CV -f scripts/init/_main_script.sql
+        run: psql -h ${{env.DB_HOST}} -U ${{env.DB_USER}} -d ${{env.DB_NAME}} -f scripts/init/_main_script.sql
         env:
-          PGPASSWORD: Server1
+          PGPASSWORD: ${{env.DB_PASSWORD}}
 
       - name: Setup Go
         uses: actions/setup-go@v2
