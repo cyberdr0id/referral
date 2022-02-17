@@ -10,6 +10,8 @@ env:
   DB_USER: postgres
   DB_PASSWORD: Server1
   DB_NAME: CV
+  DB_PORT: 5432
+  DB_SSLMODE: disable
 
 jobs:
   testing:
