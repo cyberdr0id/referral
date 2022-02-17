@@ -1,7 +1,7 @@
 name: build-push
 
 on:
-  pull_request:
+  push:
     branches:
       - main
 
@@ -22,10 +22,7 @@ jobs:
       - name: Get short commit sha
         id: vars
         run: |
-          echo "::set-output name=tag::$(git rev-parse --short HEAD)"
-          git rev-parse --short HEAD
-          echo ${GITHUB_SHA}
-          echo ${{ github.sha }}
+          echo "::set-output name=tag::$(echo ${GITHUB_SHA::7})"
 
       - name: Build and push
         uses: docker/build-push-action@v2
