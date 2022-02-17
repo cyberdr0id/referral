@@ -11,16 +11,7 @@ import (
 	"github.com/cyberdr0id/referral/internal/storage"
 	"github.com/cyberdr0id/referral/pkg/jwt"
 	mylog "github.com/cyberdr0id/referral/pkg/log"
-	"github.com/spf13/viper"
 )
-
-func initConfig() error {
-	viper.AddConfigPath("./")
-	viper.SetConfigType("env")
-	viper.SetConfigFile(".env")
-
-	return viper.ReadInConfig()
-}
 
 // Start starts API with initialization of necessary components.
 func Start() (*mylog.Logger, error) {
@@ -29,17 +20,13 @@ func Start() (*mylog.Logger, error) {
 		log.Fatalf("error with logger creating: %s", err.Error())
 	}
 
-	if err := initConfig(); err != nil {
-		return logger, fmt.Errorf("error while reading config: %s", err.Error())
-	}
-
 	config := repository.DatabaseConfig{
-		Host:         viper.GetString("DB_HOST"),
-		User:         viper.GetString("DB_USER"),
-		Password:     viper.GetString("DB_PASSWORD"),
-		DatabaseName: viper.GetString("DB_NAME"),
-		Port:         viper.GetString("DB_PORT"),
-		SSLMode:      viper.GetString("DB_SSLMODE"),
+		Host:         os.Getenv("DB_HOST"),
+		User:         os.Getenv("DB_USER"),
+		Password:     os.Getenv("DB_PASSWORD"),
+		DatabaseName: os.Getenv("DB_NAME"),
+		Port:         os.Getenv("DB_PORT"),
+		SSLMode:      os.Getenv("DB_SSLMODE"),
 	}
 
 	db, err := repository.NewConnection(config)
@@ -48,10 +35,14 @@ func Start() (*mylog.Logger, error) {
 	}
 
 	repo := repository.NewRepository(db)
-	tm := jwt.NewTokenManager(
-		viper.GetString("JWT_KEY"),
-		viper.GetInt("JWT_EXPIRY_TIME"),
+
+	tm, err := jwt.NewTokenManager(
+		os.Getenv("JWT_KEY"),
+		os.Getenv("JWT_EXPIRY_TIME"),
 	)
+	if err != nil {
+		return logger, fmt.Errorf("error with creating JWT token manager: %w", err)
+	}
 
 	s3config := &storage.StorageConfig{
 		Bucket:      os.Getenv("AWS_BUCKET"),
@@ -70,7 +61,7 @@ func Start() (*mylog.Logger, error) {
 
 	server := handler.NewServer(authService, referralService, logger)
 
-	if err := server.Run(viper.GetString("APP_PORT"), server); err != nil {
+	if err := server.Run(os.Getenv("APP_PORT"), server); err != nil {
 		return logger, fmt.Errorf("error while starting server: %s", err)
 	}
 
