@@ -248,7 +248,7 @@ func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 	sendResponse(rw, DownloadResponse{FileLink: link}, http.StatusOK)
 }
 
-//
+// DownloadAnyCV provides access for admin to download any CV of candidates.
 func (s *Server) DownloadAnyCV(rw http.ResponseWriter, r *http.Request) {
 	fileID := r.URL.Query().Get(idParameter)
 
