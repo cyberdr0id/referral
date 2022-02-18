@@ -2,15 +2,14 @@ package api
 
 import (
 	"fmt"
-	"log"
-	"os"
-
+	"github.com/cyberdr0id/referral/internal/config"
 	"github.com/cyberdr0id/referral/internal/handler"
 	"github.com/cyberdr0id/referral/internal/repository"
 	"github.com/cyberdr0id/referral/internal/service"
 	"github.com/cyberdr0id/referral/internal/storage"
 	"github.com/cyberdr0id/referral/pkg/jwt"
 	mylog "github.com/cyberdr0id/referral/pkg/log"
+	"log"
 )
 
 // Start starts API with initialization of necessary components.
@@ -20,38 +19,24 @@ func Start() (*mylog.Logger, error) {
 		log.Fatalf("error with logger creating: %s", err.Error())
 	}
 
-	config := repository.DatabaseConfig{
-		Host:         os.Getenv("DB_HOST"),
-		User:         os.Getenv("DB_USER"),
-		Password:     os.Getenv("DB_PASSWORD"),
-		DatabaseName: os.Getenv("DB_NAME"),
-		Port:         os.Getenv("DB_PORT"),
-		SSLMode:      os.Getenv("DB_SSLMODE"),
+	cfg, err := config.Load()
+	if err != nil {
+		return logger, fmt.Errorf("cannot read application config: %w", err)
 	}
 
-	db, err := repository.NewConnection(config)
+	db, err := repository.NewConnection(cfg.DB)
 	if err != nil {
 		return logger, fmt.Errorf("error while trying to connect to database: %s", err)
 	}
 
 	repo := repository.NewRepository(db)
 
-	tm, err := jwt.NewTokenManager(
-		os.Getenv("JWT_KEY"),
-		os.Getenv("JWT_EXPIRY_TIME"),
-	)
+	tm, err := jwt.NewTokenManager(cfg.JWT)
 	if err != nil {
 		return logger, fmt.Errorf("error with creating JWT token manager: %w", err)
 	}
 
-	s3config := &storage.StorageConfig{
-		Bucket:      os.Getenv("AWS_BUCKET"),
-		Region:      os.Getenv("AWS_REGION"),
-		AccessKey:   os.Getenv("AWS_ACCESS_KEY"),
-		AccessKeyID: os.Getenv("AWS_ACCESS_KEY_ID"),
-	}
-
-	s3, err := storage.NewStorage(s3config)
+	s3, err := storage.NewStorage(cfg.AWS)
 	if err != nil {
 		return logger, fmt.Errorf("cannot create new instance of object storage: %s", err)
 	}
@@ -61,7 +46,7 @@ func Start() (*mylog.Logger, error) {
 
 	server := handler.NewServer(authService, referralService, logger)
 
-	if err := server.Run(os.Getenv("APP_PORT"), server); err != nil {
+	if err := server.Run(cfg.App.Port, server); err != nil {
 		return logger, fmt.Errorf("error while starting server: %s", err)
 	}
 

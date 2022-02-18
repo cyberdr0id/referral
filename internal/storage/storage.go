@@ -3,6 +3,7 @@ package storage
 
 import (
 	"fmt"
+	"github.com/cyberdr0id/referral/internal/config"
 	"io"
 	"time"
 
@@ -17,19 +18,11 @@ const urlExpireTime = 5 * time.Minute
 // Storage presents type for work with object storage.
 type Storage struct {
 	storage *s3.S3
-	config  *StorageConfig
-}
-
-// StorageConfig consist of key parameters for work with object storage.
-type StorageConfig struct {
-	Bucket      string
-	AccessKey   string
-	AccessKeyID string
-	Region      string
+	config  *config.AWS
 }
 
 // NewStorage creates a new inastance of Storage.
-func NewStorage(config *StorageConfig) (*Storage, error) {
+func NewStorage(config *config.AWS) (*Storage, error) {
 	session, err := session.NewSession(&aws.Config{
 		Region:      aws.String(config.Region),
 		Credentials: credentials.NewStaticCredentials(config.AccessKeyID, config.AccessKey, ""),
