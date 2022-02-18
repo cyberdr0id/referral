@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"github.com/kelseyhightower/envconfig"
 )
 
@@ -41,6 +40,6 @@ func Load() (MainConfig, error) {
 	var c MainConfig
 
 	err := envconfig.Process("", &c)
-	fmt.Println(c)
+
 	return c, err
 }

@@ -48,7 +48,7 @@ func TestServer_SignUp(t *testing.T) {
 		requestBody           SignUpRequest
 		expectedStatusCode    int
 		expectedResponse      SignUpResponse
-		isErrorExpeced        bool
+		isErrorExpected       bool
 		expectedErrorResponse ErrorResponse
 		mock                  func(s *mock_service.MockAuth, name, password string)
 	}{
@@ -62,7 +62,7 @@ func TestServer_SignUp(t *testing.T) {
 			},
 			expectedStatusCode:    http.StatusCreated,
 			expectedResponse:      SignUpResponse{ID: defaultID},
-			isErrorExpeced:        false,
+			isErrorExpected:       false,
 			expectedErrorResponse: ErrorResponse{},
 			mock: func(s *mock_service.MockAuth, name, password string) {
 				s.EXPECT().SignUp(name, password).Return(defaultID, nil)
@@ -78,7 +78,7 @@ func TestServer_SignUp(t *testing.T) {
 			},
 			expectedStatusCode: http.StatusConflict,
 			expectedResponse:   SignUpResponse{},
-			isErrorExpeced:     true,
+			isErrorExpected:    true,
 			expectedErrorResponse: ErrorResponse{
 				Message: userAlreadyExistsMessage,
 			},
@@ -96,7 +96,7 @@ func TestServer_SignUp(t *testing.T) {
 			},
 			expectedStatusCode: http.StatusBadRequest,
 			expectedResponse:   SignUpResponse{},
-			isErrorExpeced:     true,
+			isErrorExpected:    true,
 			expectedErrorResponse: ErrorResponse{
 				Message: invalidPasswordMessage,
 			},
@@ -112,7 +112,7 @@ func TestServer_SignUp(t *testing.T) {
 			},
 			expectedStatusCode: http.StatusBadRequest,
 			expectedResponse:   SignUpResponse{},
-			isErrorExpeced:     true,
+			isErrorExpected:    true,
 			expectedErrorResponse: ErrorResponse{
 				Message: invalidNameMessage,
 			},
@@ -128,7 +128,7 @@ func TestServer_SignUp(t *testing.T) {
 			},
 			expectedStatusCode: http.StatusBadRequest,
 			expectedResponse:   SignUpResponse{},
-			isErrorExpeced:     true,
+			isErrorExpected:    true,
 			expectedErrorResponse: ErrorResponse{
 				Message: invalidNameLengthMessage,
 			},
@@ -144,7 +144,7 @@ func TestServer_SignUp(t *testing.T) {
 			},
 			expectedStatusCode: http.StatusBadRequest,
 			expectedResponse:   SignUpResponse{},
-			isErrorExpeced:     true,
+			isErrorExpected:    true,
 			expectedErrorResponse: ErrorResponse{
 				Message: invalidPasswordLengthMessage,
 			},
@@ -160,7 +160,7 @@ func TestServer_SignUp(t *testing.T) {
 			},
 			expectedStatusCode: http.StatusBadRequest,
 			expectedResponse:   SignUpResponse{},
-			isErrorExpeced:     true,
+			isErrorExpected:    true,
 			expectedErrorResponse: ErrorResponse{
 				Message: invalidNameLengthMessage,
 			},
@@ -176,7 +176,7 @@ func TestServer_SignUp(t *testing.T) {
 			},
 			expectedStatusCode: http.StatusBadRequest,
 			expectedResponse:   SignUpResponse{},
-			isErrorExpeced:     true,
+			isErrorExpected:    true,
 			expectedErrorResponse: ErrorResponse{
 				Message: invalidPasswordLengthMessage,
 			},
@@ -192,7 +192,7 @@ func TestServer_SignUp(t *testing.T) {
 			},
 			expectedStatusCode: http.StatusInternalServerError,
 			expectedResponse:   SignUpResponse{},
-			isErrorExpeced:     true,
+			isErrorExpected:    true,
 			expectedErrorResponse: ErrorResponse{
 				Message: errInternalServerError.Error(),
 			},
@@ -224,7 +224,7 @@ func TestServer_SignUp(t *testing.T) {
 
 			s.Router.ServeHTTP(w, req)
 
-			if tc.isErrorExpeced {
+			if tc.isErrorExpected {
 				var response ErrorResponse
 				_ = json.Unmarshal(w.Body.Bytes(), &response)
 

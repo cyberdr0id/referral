@@ -3,7 +3,7 @@ package tests
 import (
 	"database/sql"
 	"fmt"
-	"os"
+	"github.com/cyberdr0id/referral/internal/config"
 	"testing"
 
 	"github.com/cyberdr0id/referral/internal/repository"
@@ -22,16 +22,11 @@ func TestReferralAPISuite(t *testing.T) {
 }
 
 func (s *ReferralAPISuite) SetupSuite() {
-	config := repository.DatabaseConfig{
-		Host:         os.Getenv("DB_HOST"),
-		User:         os.Getenv("DB_USER"),
-		Password:     os.Getenv("DB_PASSWORD"),
-		DatabaseName: os.Getenv("DB_NAME"),
-		Port:         os.Getenv("DB_PORT"),
-		SSLMode:      os.Getenv("DB_SSLMODE"),
+	cfg, err := config.Load()
+	if err != nil {
+		s.FailNow(fmt.Errorf("cannot read database config: %w", err).Error())
 	}
-
-	db, err := repository.NewConnection(config)
+	db, err := repository.NewConnection(cfg.DB)
 	if err != nil {
 		s.FailNow(fmt.Errorf("cannot create database connection: %w", err).Error())
 	}
