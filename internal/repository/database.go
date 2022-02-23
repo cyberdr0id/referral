@@ -4,22 +4,12 @@ package repository
 import (
 	"database/sql"
 	"fmt"
-
+	"github.com/cyberdr0id/referral/internal/config"
 	_ "github.com/lib/pq"
 )
 
-// DatabaseConfig represents a type that contains database configuration data.
-type DatabaseConfig struct {
-	Host         string
-	User         string
-	Password     string
-	DatabaseName string
-	Port         string
-	SSLMode      string
-}
-
 // NewConnection creates PostgreSQL connection.
-func NewConnection(config DatabaseConfig) (*sql.DB, error) {
+func NewConnection(config *config.Database) (*sql.DB, error) {
 	psqlconn := fmt.Sprintf("host=%s port=%s user=%s dbname=%s password=%s sslmode=%s",
 		config.Host, config.Port, config.User, config.DatabaseName, config.Password, config.SSLMode)
 

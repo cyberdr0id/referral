@@ -1,15 +1,31 @@
 version: '3'
 
 services:
+  referral:
+    build: .
+    container_name: referral-api
+    ports:
+      - "8001:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - .env
+
   postgres:
-    container_name: referral
     image: postgres:alpine
+    container_name: psql
     restart: always
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=Server1
       - POSTGRES_DB=CV
+    ports:
+        - "5432:5432"
     volumes:
       - ./scripts/init/_main_script.sql:/docker-entrypoint-initdb.d/_main_script.sql
-    ports:
-      - 5432:5432
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5    

@@ -1,23 +1,29 @@
 linters:
+  disable:
+    - dupl
+    - funlen
+    - goconst
+    - lll
+    - gofumpt
+    - gochecknoglobals
+    - revive
+    - scopelint
+    - gosec
   enable:
     - bodyclose
     - deadcode
     - depguard
     - dogsled
-    - dupl
     - errcheck
     - exportloopref
     - exhaustive
-    - funlen
     - gochecknoinits
-    - goconst
     - gocritic
     - gocyclo
     - goprintffuncname
     - gosimple
     - govet
     - ineffassign
-    - lll
     - misspell
     - nakedret
     - nolintlint
@@ -31,13 +37,9 @@ linters:
     - unused
     - varcheck
     - whitespace
-    - gofumpt
-    - gochecknoglobals
     - interfacer
     - predeclared
-    - revive
     - gas
-    - scopelint
     - maligned
     - prealloc
     

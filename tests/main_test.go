@@ -3,10 +3,10 @@ package tests
 import (
 	"database/sql"
 	"fmt"
+	"github.com/cyberdr0id/referral/internal/config"
 	"testing"
 
 	"github.com/cyberdr0id/referral/internal/repository"
-	"github.com/spf13/viper"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -22,23 +22,11 @@ func TestReferralAPISuite(t *testing.T) {
 }
 
 func (s *ReferralAPISuite) SetupSuite() {
-	viper.AddConfigPath("../docs")
-	viper.SetConfigName("config")
-
-	if err := viper.ReadInConfig(); err != nil {
-		s.FailNow(fmt.Errorf("cannot read application config: %w", err).Error())
+	cfg, err := config.Load()
+	if err != nil {
+		s.FailNow(fmt.Errorf("cannot read database config: %w", err).Error())
 	}
-
-	config := repository.DatabaseConfig{
-		Host:         viper.GetString("db.host"),
-		User:         viper.GetString("db.user"),
-		Password:     viper.GetString("db.password"),
-		DatabaseName: viper.GetString("db.dbname"),
-		Port:         viper.GetString("db.port"),
-		SSLMode:      viper.GetString("db.sslmode"),
-	}
-
-	db, err := repository.NewConnection(config)
+	db, err := repository.NewConnection(cfg.DB)
 	if err != nil {
 		s.FailNow(fmt.Errorf("cannot create database connection: %w", err).Error())
 	}

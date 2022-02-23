@@ -10,6 +10,7 @@ import (
 
 	"github.com/cyberdr0id/referral/internal/service"
 	mock_service "github.com/cyberdr0id/referral/internal/service/mock"
+	mylog "github.com/cyberdr0id/referral/pkg/log"
 	"github.com/golang/mock/gomock"
 	"github.com/stretchr/testify/assert"
 )
@@ -30,10 +31,11 @@ const (
 )
 
 var (
-	userAlreadyExistsMessage      = service.ErrUserAlreadyExists.Error()
-	invalidNameMessage            = ErrInvalidParameter.Error() + ": name"
-	invalidPasswordMessage        = ErrInvalidParameter.Error() + ": password"
-	invalidParameterLengthMessage = ErrInvalidParameter.Error() + ": wrong length"
+	userAlreadyExistsMessage     = service.ErrUserAlreadyExists.Error()
+	invalidNameMessage           = ErrInvalidParameter.Error() + ": name"
+	invalidPasswordMessage       = ErrInvalidParameter.Error() + ": password"
+	invalidNameLengthMessage     = ErrInvalidParameter.Error() + ": name must be between 6 and 18 symbols"
+	invalidPasswordLengthMessage = ErrInvalidParameter.Error() + ": password must be between 6 and 18 symbols"
 
 	errInternalServerError = errors.New("internal server error")
 )
@@ -46,7 +48,7 @@ func TestServer_SignUp(t *testing.T) {
 		requestBody           SignUpRequest
 		expectedStatusCode    int
 		expectedResponse      SignUpResponse
-		isErrorExpeced        bool
+		isErrorExpected       bool
 		expectedErrorResponse ErrorResponse
 		mock                  func(s *mock_service.MockAuth, name, password string)
 	}{
@@ -60,7 +62,7 @@ func TestServer_SignUp(t *testing.T) {
 			},
 			expectedStatusCode:    http.StatusCreated,
 			expectedResponse:      SignUpResponse{ID: defaultID},
-			isErrorExpeced:        false,
+			isErrorExpected:       false,
 			expectedErrorResponse: ErrorResponse{},
 			mock: func(s *mock_service.MockAuth, name, password string) {
 				s.EXPECT().SignUp(name, password).Return(defaultID, nil)
@@ -76,7 +78,7 @@ func TestServer_SignUp(t *testing.T) {
 			},
 			expectedStatusCode: http.StatusConflict,
 			expectedResponse:   SignUpResponse{},
-			isErrorExpeced:     true,
+			isErrorExpected:    true,
 			expectedErrorResponse: ErrorResponse{
 				Message: userAlreadyExistsMessage,
 			},
@@ -94,7 +96,7 @@ func TestServer_SignUp(t *testing.T) {
 			},
 			expectedStatusCode: http.StatusBadRequest,
 			expectedResponse:   SignUpResponse{},
-			isErrorExpeced:     true,
+			isErrorExpected:    true,
 			expectedErrorResponse: ErrorResponse{
 				Message: invalidPasswordMessage,
 			},
@@ -110,7 +112,7 @@ func TestServer_SignUp(t *testing.T) {
 			},
 			expectedStatusCode: http.StatusBadRequest,
 			expectedResponse:   SignUpResponse{},
-			isErrorExpeced:     true,
+			isErrorExpected:    true,
 			expectedErrorResponse: ErrorResponse{
 				Message: invalidNameMessage,
 			},
@@ -126,9 +128,9 @@ func TestServer_SignUp(t *testing.T) {
 			},
 			expectedStatusCode: http.StatusBadRequest,
 			expectedResponse:   SignUpResponse{},
-			isErrorExpeced:     true,
+			isErrorExpected:    true,
 			expectedErrorResponse: ErrorResponse{
-				Message: invalidParameterLengthMessage,
+				Message: invalidNameLengthMessage,
 			},
 			mock: func(s *mock_service.MockAuth, name, password string) {},
 		},
@@ -142,9 +144,9 @@ func TestServer_SignUp(t *testing.T) {
 			},
 			expectedStatusCode: http.StatusBadRequest,
 			expectedResponse:   SignUpResponse{},
-			isErrorExpeced:     true,
+			isErrorExpected:    true,
 			expectedErrorResponse: ErrorResponse{
-				Message: invalidParameterLengthMessage,
+				Message: invalidPasswordLengthMessage,
 			},
 			mock: func(s *mock_service.MockAuth, name, password string) {},
 		},
@@ -158,9 +160,9 @@ func TestServer_SignUp(t *testing.T) {
 			},
 			expectedStatusCode: http.StatusBadRequest,
 			expectedResponse:   SignUpResponse{},
-			isErrorExpeced:     true,
+			isErrorExpected:    true,
 			expectedErrorResponse: ErrorResponse{
-				Message: invalidParameterLengthMessage,
+				Message: invalidNameLengthMessage,
 			},
 			mock: func(s *mock_service.MockAuth, name, password string) {},
 		},
@@ -174,9 +176,9 @@ func TestServer_SignUp(t *testing.T) {
 			},
 			expectedStatusCode: http.StatusBadRequest,
 			expectedResponse:   SignUpResponse{},
-			isErrorExpeced:     true,
+			isErrorExpected:    true,
 			expectedErrorResponse: ErrorResponse{
-				Message: invalidParameterLengthMessage,
+				Message: invalidPasswordLengthMessage,
 			},
 			mock: func(s *mock_service.MockAuth, name, password string) {},
 		},
@@ -190,7 +192,7 @@ func TestServer_SignUp(t *testing.T) {
 			},
 			expectedStatusCode: http.StatusInternalServerError,
 			expectedResponse:   SignUpResponse{},
-			isErrorExpeced:     true,
+			isErrorExpected:    true,
 			expectedErrorResponse: ErrorResponse{
 				Message: errInternalServerError.Error(),
 			},
@@ -208,7 +210,12 @@ func TestServer_SignUp(t *testing.T) {
 			auth := mock_service.NewMockAuth(ctrl)
 			tc.mock(auth, tc.serviceName, tc.servicePassword)
 
-			s := NewServer(auth, nil, nil)
+			logger, err := mylog.NewLogger()
+			if err != nil {
+				t.Fatalf("error with logger creating: %s", err.Error())
+			}
+
+			s := NewServer(auth, nil, logger)
 
 			w := httptest.NewRecorder()
 
@@ -217,7 +224,7 @@ func TestServer_SignUp(t *testing.T) {
 
 			s.Router.ServeHTTP(w, req)
 
-			if tc.isErrorExpeced {
+			if tc.isErrorExpected {
 				var response ErrorResponse
 				_ = json.Unmarshal(w.Body.Bytes(), &response)
 
@@ -360,7 +367,12 @@ func TestServer_LogIn(t *testing.T) {
 			auth := mock_service.NewMockAuth(ctrl)
 			tc.mock(auth, tc.serviceName, tc.servicePassword)
 
-			s := NewServer(auth, nil, nil)
+			logger, err := mylog.NewLogger()
+			if err != nil {
+				t.Fatalf("error with logger creating: %s", err.Error())
+			}
+
+			s := NewServer(auth, nil, logger)
 
 			w := httptest.NewRecorder()
 

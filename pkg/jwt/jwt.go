@@ -2,6 +2,8 @@ package jwt
 
 import (
 	"fmt"
+	"github.com/cyberdr0id/referral/internal/config"
+	"strconv"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
@@ -21,11 +23,16 @@ type TokenManager struct {
 }
 
 // NewTokenManager creates a new instance of TokenManager.
-func NewTokenManager(key string, expiryTime int) *TokenManager {
-	return &TokenManager{
-		key:              []byte(key),
-		expiryTimeInHour: expiryTime,
+func NewTokenManager(config *config.JWT) (*TokenManager, error) {
+	et, err := strconv.Atoi(config.ExpiryTime)
+	if err != nil {
+		return &TokenManager{}, fmt.Errorf("cannot convert expity time of JWT: %w", err)
 	}
+
+	return &TokenManager{
+		key:              []byte(config.Key),
+		expiryTimeInHour: et,
+	}, nil
 }
 
 // GenerateToken generates JWT token

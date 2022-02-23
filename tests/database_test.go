@@ -9,14 +9,14 @@ const (
 	defaultPassword         = "password"
 	defaultIsAdmin          = false
 	defaultFileID           = "1"
-	defaultStatus           = "Submitted"
+	defaultStatus           = "submitted"
 	defaultPageNumber       = 1
 	defaultPageSize         = 1
 	defaultCandidateName    = "candidate"
 	defaultCandidateSurname = "candidate"
 	defaultRequestsLength   = 1
 
-	statusAccepted = "Accepted"
+	statusAccepted = "accepted"
 )
 
 func makeRequest(s *ReferralAPISuite) (id string, requestID string) {
