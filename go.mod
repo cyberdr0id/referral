@@ -20,7 +20,6 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/subosito/gotenv v1.2.0 // indirect
 	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519
-	golang.org/x/sys v0.0.0-20211019181941-9d821ace8654 // indirect
 	golang.org/x/text v0.3.7 // indirect
 	gopkg.in/ini.v1 v1.63.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
@@ -42,8 +41,10 @@ require (
 )
 
 require (
+	cloud.google.com/go/storage v1.21.0 // indirect
 	github.com/DATA-DOG/go-sqlmock v1.5.0
 	github.com/google/uuid v1.1.2 // indirect
 	github.com/joho/godotenv v1.4.0 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0 // indirect
+	google.golang.org/api v0.69.0 // indirect
 )
