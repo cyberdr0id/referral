@@ -6,7 +6,6 @@ linters:
     - lll
     - gofumpt
     - gochecknoglobals
-    - revive
     - scopelint
     - gosec
   enable:
