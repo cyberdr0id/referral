@@ -137,15 +137,20 @@ type CandidateSendingResponse struct {
 
 // SendCandidate sends candidate info and his cv.
 func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
-	file, _, err := r.FormFile(filenameParam)
+	file, fileHeader, err := r.FormFile(filenameParam)
 	if err != nil {
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 		return
 	}
 	defer file.Close()
 
+	f, err := fileHeader.Open()
+	if err != nil {
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
+	}
+
 	request := service.SubmitCandidateRequest{
-		File:             file,
+		File:             f,
 		CandidateName:    r.FormValue(candidateNameParam),
 		CandidateSurname: r.FormValue(candidateSurnameParam),
 	}
@@ -219,7 +224,7 @@ func (s *Server) GetAllRequests(rw http.ResponseWriter, r *http.Request) {
 
 // DownloadResponse presents a type which contains link to file for download candidate cv.
 type DownloadResponse struct {
-	FileLink string `json:"link"`
+	Message string `json:"message"`
 }
 
 // DownloadCV downloads CV of a particular candidate.
@@ -238,14 +243,14 @@ func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	link, err := s.Referral.DownloadFile(id, userID)
+	err := s.Referral.DownloadFile(r.Context(), id, userID)
 	if err != nil {
 		s.Logger.ErrorLogger.Println(err)
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
 		return
 	}
 
-	sendResponse(rw, DownloadResponse{FileLink: link}, http.StatusOK)
+	sendResponse(rw, DownloadResponse{Message: "All right! Check 'Downloads' folder."}, http.StatusOK)
 }
 
 // DownloadAnyCV provides access for admin to download any CV of candidates.
@@ -257,14 +262,14 @@ func (s *Server) DownloadAnyCV(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	link, err := s.Referral.DownloadFile(fileID, anyUserID)
+	err := s.Referral.DownloadFile(r.Context(), fileID, anyUserID)
 	if err != nil {
 		s.Logger.ErrorLogger.Println(err)
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
 		return
 	}
 
-	sendResponse(rw, DownloadResponse{FileLink: link}, http.StatusOK)
+	sendResponse(rw, DownloadResponse{Message: "All right! Check 'Downloads' folder."}, http.StatusOK)
 }
 
 // UpdateRequest type presents data for request update.
@@ -273,8 +278,8 @@ type UpdateRequest struct {
 	NewStatus string `json:"status"`
 }
 
-// UpdateRespone presents type with info about request update.
-type UpdateRespone struct {
+// UpdateResponse presents type with info about request update.
+type UpdateResponse struct {
 	Message string `json:"message"`
 }
 
@@ -304,7 +309,7 @@ func (s *Server) UpdateRequest(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sendResponse(rw, UpdateRespone{Message: fmt.Sprintf("request status with %s ID has been updated", request.ID)}, http.StatusOK)
+	sendResponse(rw, UpdateResponse{Message: fmt.Sprintf("request status with %s ID has been updated", request.ID)}, http.StatusOK)
 }
 
 // ValidateUpdateRequest validates data before request update.
