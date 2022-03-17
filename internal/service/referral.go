@@ -4,12 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
-
 	mycontext "github.com/cyberdr0id/referral/internal/context"
 	"github.com/cyberdr0id/referral/internal/repository"
 	"github.com/cyberdr0id/referral/internal/storage"
 	"github.com/pborman/uuid"
+	"mime/multipart"
 )
 
 // ErrInvalidParameter presetns an error when user input invalid parameter.
@@ -18,20 +17,20 @@ var ErrInvalidParameter = errors.New("invalid parameter")
 // ReferralService presents access to referral service via repository.
 type ReferralService struct {
 	repo *repository.Repository
-	s3   *storage.Storage
+	gcs  *storage.Storage
 }
 
 // NewReferralService creates a new instance of ReferralService.
-func NewReferralService(repo *repository.Repository, s3 *storage.Storage) *ReferralService {
+func NewReferralService(repo *repository.Repository, gcs *storage.Storage) *ReferralService {
 	return &ReferralService{
 		repo: repo,
-		s3:   s3,
+		gcs:  gcs,
 	}
 }
 
 // SubmitCandidateRequest presents a type for reading data after submitting a candidate.
 type SubmitCandidateRequest struct {
-	File             io.ReadSeeker
+	File             multipart.File
 	CandidateName    string
 	CandidateSurname string
 }
@@ -45,7 +44,7 @@ func (s *ReferralService) AddCandidate(ctx context.Context, request SubmitCandid
 
 	fileID := uuid.NewRandom().String()
 
-	err := s.s3.UploadFileToStorage(request.File, fileID)
+	err := s.gcs.UploadFileToStorage(ctx, request.File, fileID)
 	if err != nil {
 		return "", fmt.Errorf("cannot load file to object storage: %w", err)
 	}
@@ -69,18 +68,18 @@ func (s *ReferralService) GetRequests(userID, status string, pageNumber, pageSiz
 }
 
 // DownloadFile downloads file from object storage.
-func (s *ReferralService) DownloadFile(candidateID string, userID string) (string, error) {
+func (s *ReferralService) DownloadFile(ctx context.Context, candidateID string, userID string) error {
 	fileID, err := s.repo.GetCVID(candidateID, userID)
 	if err != nil {
-		return "", fmt.Errorf("cannot get file id from object storage: %w", err)
+		return fmt.Errorf("cannot get file id from object storage: %w", err)
 	}
 
-	linkToFile, err := s.s3.GetFileURLByID(fileID)
+	err = s.gcs.DownloadFile(ctx, fileID, fileID)
 	if err != nil {
-		return "", fmt.Errorf("cannot download file from object storage: %w", err)
+		return fmt.Errorf("cannot download file from object storage: %w", err)
 	}
 
-	return linkToFile, nil
+	return nil
 }
 
 // UpdateRequest updates request's status.

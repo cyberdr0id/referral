@@ -36,13 +36,13 @@ func Start() (*mylog.Logger, error) {
 		return logger, fmt.Errorf("error with creating JWT token manager: %w", err)
 	}
 
-	s3, err := storage.NewStorage(cfg.AWS)
+	gcs, err := storage.NewStorage(cfg.GCS)
 	if err != nil {
 		return logger, fmt.Errorf("cannot create new instance of object storage: %s", err)
 	}
 
 	authService := service.NewAuthService(repo, tm)
-	referralService := service.NewReferralService(repo, s3)
+	referralService := service.NewReferralService(repo, gcs)
 
 	server := handler.NewServer(authService, referralService, logger)
 

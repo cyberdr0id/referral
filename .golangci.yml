@@ -6,7 +6,6 @@ linters:
     - lll
     - gofumpt
     - gochecknoglobals
-    - revive
     - scopelint
     - gosec
   enable:
@@ -38,7 +37,6 @@ linters:
     - varcheck
     - whitespace
     - interfacer
-    - predeclared
     - gas
     - maligned
     - prealloc

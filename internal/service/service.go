@@ -33,6 +33,6 @@ type Auth interface {
 type Referral interface {
 	GetRequests(userID, status string, pageNumber, pageSize int) ([]repository.UserRequests, error)
 	AddCandidate(ctx context.Context, request SubmitCandidateRequest) (string, error)
-	DownloadFile(id string, userID string) (string, error)
+	DownloadFile(ctx context.Context, id string, userID string) error
 	UpdateRequest(id, status string) error
 }

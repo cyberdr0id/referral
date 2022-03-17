@@ -2,80 +2,74 @@
 package storage
 
 import (
+	"cloud.google.com/go/storage"
+	"context"
 	"fmt"
 	"github.com/cyberdr0id/referral/internal/config"
+	"google.golang.org/api/option"
 	"io"
-	"time"
-
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"mime/multipart"
+	"os"
 )
 
-const urlExpireTime = 5 * time.Minute
-
-// Storage presents type for work with object storage.
+// Storage presents a type for work with Google cloud storage
 type Storage struct {
-	storage *s3.S3
-	config  *config.AWS
+	Client *storage.Client
+	Bucket string
 }
 
-// NewStorage creates a new inastance of Storage.
-func NewStorage(config *config.AWS) (*Storage, error) {
-	session, err := session.NewSession(&aws.Config{
-		Region:      aws.String(config.Region),
-		Credentials: credentials.NewStaticCredentials(config.AccessKeyID, config.AccessKey, ""),
-	})
+// NewStorage creates a new instance of Storage.
+func NewStorage(cfg *config.GCS) (*Storage, error) {
+	newClient, err := storage.NewClient(context.Background(), option.WithCredentialsFile(cfg.CredentialsPath))
 	if err != nil {
-		return nil, fmt.Errorf("cannot start session: %w", err)
+		return &Storage{}, fmt.Errorf("cannot create new client of object storage: %w", err)
 	}
 
 	return &Storage{
-		storage: s3.New(session),
-		config:  config,
+		Client: newClient,
+		Bucket: cfg.Bucket,
 	}, nil
 }
 
-// UploadFileToStorage uploads file to object storage.
-func (s *Storage) UploadFileToStorage(file io.ReadSeeker, fileID string) error {
-	_, err := s.storage.PutObject(&s3.PutObjectInput{
-		Body:   file,
-		Bucket: aws.String(s.config.Bucket),
-		Key:    aws.String(fileID),
-		ACL:    aws.String(s3.BucketCannedACLPublicRead),
-	})
+// DownloadFile downloads a file from object storage by file id.
+func (s *Storage) DownloadFile(ctx context.Context, fileID, fileName string) error {
+	f, err := os.Create(fmt.Sprintf("downloaded/%s.pdf", fileName))
 	if err != nil {
-		return fmt.Errorf("cannot load file to object storage: %w", err)
+		return fmt.Errorf("cannot create file: %w", err)
+	}
+
+	rc, err := s.Client.Bucket(s.Bucket).Object(fileID).NewReader(ctx)
+	if err != nil {
+		return fmt.Errorf("cannot read object: %w", err)
+	}
+
+	if _, err := io.Copy(f, rc); err != nil {
+		return fmt.Errorf("cannot copy object to file: %w", err)
+	}
+
+	if err = f.Close(); err != nil {
+		return fmt.Errorf("cannot close file: %w", err)
+	}
+	if err = rc.Close(); err != nil {
+		return fmt.Errorf("cannot close file reader: %w", err)
 	}
 
 	return nil
 }
 
-// DownloadFileFromStorage downloads file from object storage
-func (s *Storage) DownloadFileFromStorage(fileID string) (io.ReadCloser, error) {
-	resp, err := s.storage.GetObject(&s3.GetObjectInput{
-		Bucket: aws.String(s.config.Bucket),
-		Key:    aws.String(fileID),
-	})
-	if err != nil {
-		return nil, fmt.Errorf("cannot download file: %w", err)
+// UploadFileToStorage uploads file to object storage.
+func (s *Storage) UploadFileToStorage(ctx context.Context, file multipart.File, fileID string) error {
+	wc := s.Client.Bucket(s.Bucket).Object(fileID).NewWriter(ctx)
+
+	wc.Size = 32 << 20
+	wc.ContentType = "application/pdf"
+
+	if _, err := io.Copy(wc, file); err != nil {
+		return fmt.Errorf("cannot copy file info: %w", err)
+	}
+	if err := wc.Close(); err != nil {
+		return fmt.Errorf("cannot close file writer: %w", err)
 	}
 
-	return resp.Body, nil
-}
-
-// GetFileURLByID returns file URL by it ID.
-func (s *Storage) GetFileURLByID(fileID string) (string, error) {
-	req, _ := s.storage.GetObjectRequest(&s3.GetObjectInput{
-		Bucket: aws.String(s.config.Bucket),
-		Key:    aws.String(fileID),
-	})
-
-	url, err := req.Presign(urlExpireTime)
-	if err != nil {
-		return "", fmt.Errorf("cannot create file URL: %w", err)
-	}
-
-	return url, err
+	return nil
 }
