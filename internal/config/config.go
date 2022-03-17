@@ -20,12 +20,10 @@ type JWT struct {
 	ExpiryTime string `envconfig:"JWT_EXPIRY_TIME"`
 }
 
-// AWS is a struct of AWS S3 configuration.
-type AWS struct {
-	Bucket      string `envconfig:"AWS_BUCKET"`
-	Region      string `envconfig:"AWS_REGION"`
-	AccessKey   string `envconfig:"AWS_ACCESS_KEY"`
-	AccessKeyID string `envconfig:"AWS_ACCESS_KEY_ID"`
+// GCS consist of necessary parameters for work with Google object storage.
+type GCS struct {
+	Bucket          string `envconfig:"GOOGLE_BUCKET_NAME"`
+	CredentialsPath string `envconfig:"GCS_CREDENTIALS_PATH"`
 }
 
 // Application has parameters for starting application.
@@ -37,8 +35,8 @@ type Application struct {
 type MainConfig struct {
 	DB  *Database
 	JWT *JWT
-	AWS *AWS
 	App *Application
+	GCS *GCS
 }
 
 // Load loads application config from environment variables.
