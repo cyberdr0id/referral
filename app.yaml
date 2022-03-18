@@ -1,6 +1,6 @@
 runtime: go116
 
-main: ./cmd/main
+main: ./cmd
 
 env_variables:
   GOOGLE_BUCKET_NAME: "referral-itech"
