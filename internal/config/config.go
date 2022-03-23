@@ -1,8 +1,6 @@
 package config
 
 import (
-	"fmt"
-
 	"github.com/kelseyhightower/envconfig"
 )
 
@@ -50,8 +48,6 @@ func Load() (MainConfig, error) {
 	if c.App.Port == "" {
 		c.App.Port = "8000"
 	}
-
-	fmt.Println(c.App, c.DB, c.GCS, c.JWT)
 
 	return c, err
 }
