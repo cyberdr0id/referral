@@ -1,1 +1,1 @@
-web: referral
+web: bin/cmd
