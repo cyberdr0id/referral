@@ -22,13 +22,11 @@ func Start() (*mylog.Logger, error) {
 
 	cfg, err := config.Load()
 	if err != nil {
-		fmt.Println(fmt.Errorf("cannot read application config: %w", err))
 		return logger, fmt.Errorf("cannot read application config: %w", err)
 	}
 
 	db, err := repository.NewConnection(cfg.DB)
 	if err != nil {
-		fmt.Println(fmt.Errorf("error while trying to connect to database: %s", err))
 		return logger, fmt.Errorf("error while trying to connect to database: %s", err)
 	}
 
@@ -36,13 +34,11 @@ func Start() (*mylog.Logger, error) {
 
 	tm, err := jwt.NewTokenManager(cfg.JWT)
 	if err != nil {
-		fmt.Println(fmt.Errorf("error with creating JWT token manager: %w", err))
 		return logger, fmt.Errorf("error with creating JWT token manager: %w", err)
 	}
 
 	gcs, err := storage.NewStorage(cfg.GCS)
 	if err != nil {
-		fmt.Println(fmt.Errorf("cannot create new instance of object storage: %s", err))
 		return logger, fmt.Errorf("cannot create new instance of object storage: %s", err)
 	}
 
@@ -52,7 +48,6 @@ func Start() (*mylog.Logger, error) {
 	server := handler.NewServer(authService, referralService, logger)
 
 	if err := server.Run(cfg.App.Port, server); err != nil {
-		fmt.Println(fmt.Errorf("error while starting server: %s", err))
 		return logger, fmt.Errorf("error while starting server: %s", err)
 	}
 
