@@ -30,7 +30,7 @@ type GCS struct {
 
 // Application has parameters for starting application.
 type Application struct {
-	Port string `envconfig:"APP_PORT"`
+	Port string `envconfig:"PORT"`
 }
 
 // MainConfig unites all configs of application.
@@ -46,6 +46,10 @@ func Load() (MainConfig, error) {
 	var c MainConfig
 
 	err := envconfig.Process("", &c)
+
+	if c.App.Port == "" {
+		c.App.Port = "8000"
+	}
 
 	fmt.Println(c.App, c.DB, c.GCS, c.JWT)
 
