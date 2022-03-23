@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"mime/multipart"
+
 	mycontext "github.com/cyberdr0id/referral/internal/context"
 	"github.com/cyberdr0id/referral/internal/repository"
 	"github.com/cyberdr0id/referral/internal/storage"
 	"github.com/pborman/uuid"
-	"mime/multipart"
 )
 
 // ErrInvalidParameter presetns an error when user input invalid parameter.
@@ -68,18 +69,18 @@ func (s *ReferralService) GetRequests(userID, status string, pageNumber, pageSiz
 }
 
 // DownloadFile downloads file from object storage.
-func (s *ReferralService) DownloadFile(ctx context.Context, candidateID string, userID string) error {
+func (s *ReferralService) DownloadFile(ctx context.Context, candidateID string, userID string) (string, error) {
 	fileID, err := s.repo.GetCVID(candidateID, userID)
 	if err != nil {
-		return fmt.Errorf("cannot get file id from object storage: %w", err)
+		return "", fmt.Errorf("cannot get file id from object storage: %w", err)
 	}
 
-	err = s.gcs.DownloadFile(ctx, fileID, fileID)
+	url, err := s.gcs.DownloadFile(ctx, fileID, fileID)
 	if err != nil {
-		return fmt.Errorf("cannot download file from object storage: %w", err)
+		return "", fmt.Errorf("cannot download file from object storage: %w", err)
 	}
 
-	return nil
+	return url, nil
 }
 
 // UpdateRequest updates request's status.

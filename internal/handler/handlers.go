@@ -224,7 +224,7 @@ func (s *Server) GetAllRequests(rw http.ResponseWriter, r *http.Request) {
 
 // DownloadResponse presents a type which contains link to file for download candidate cv.
 type DownloadResponse struct {
-	Message string `json:"message"`
+	Link string `json:"link"`
 }
 
 // DownloadCV downloads CV of a particular candidate.
@@ -243,14 +243,14 @@ func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := s.Referral.DownloadFile(r.Context(), id, userID)
+	url, err := s.Referral.DownloadFile(r.Context(), id, userID)
 	if err != nil {
 		s.Logger.ErrorLogger.Println(err)
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
 		return
 	}
 
-	sendResponse(rw, DownloadResponse{Message: "All right! Check 'Downloads' folder."}, http.StatusOK)
+	sendResponse(rw, DownloadResponse{Link: url}, http.StatusOK)
 }
 
 // DownloadAnyCV provides access for admin to download any CV of candidates.
@@ -262,14 +262,14 @@ func (s *Server) DownloadAnyCV(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := s.Referral.DownloadFile(r.Context(), fileID, anyUserID)
+	url, err := s.Referral.DownloadFile(r.Context(), fileID, anyUserID)
 	if err != nil {
 		s.Logger.ErrorLogger.Println(err)
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
 		return
 	}
 
-	sendResponse(rw, DownloadResponse{Message: "All right! Check 'Downloads' folder."}, http.StatusOK)
+	sendResponse(rw, DownloadResponse{Link: url}, http.StatusOK)
 }
 
 // UpdateRequest type presents data for request update.
