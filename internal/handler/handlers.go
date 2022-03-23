@@ -244,6 +244,10 @@ func (s *Server) DownloadCV(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	url, err := s.Referral.DownloadFile(r.Context(), id, userID)
+	if errors.Is(err, service.ErrNoFile) {
+		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
+		return
+	}
 	if err != nil {
 		s.Logger.ErrorLogger.Println(err)
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusInternalServerError)
