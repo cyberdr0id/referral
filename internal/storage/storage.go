@@ -2,14 +2,15 @@
 package storage
 
 import (
-	"cloud.google.com/go/storage"
 	"context"
 	"fmt"
-	"github.com/cyberdr0id/referral/internal/config"
-	"google.golang.org/api/option"
 	"io"
 	"mime/multipart"
-	"os"
+	"time"
+
+	"cloud.google.com/go/storage"
+	"github.com/cyberdr0id/referral/internal/config"
+	"google.golang.org/api/option"
 )
 
 // Storage presents a type for work with Google cloud storage
@@ -32,29 +33,19 @@ func NewStorage(cfg *config.GCS) (*Storage, error) {
 }
 
 // DownloadFile downloads a file from object storage by file id.
-func (s *Storage) DownloadFile(ctx context.Context, fileID, fileName string) error {
-	f, err := os.Create(fmt.Sprintf("downloaded/%s.pdf", fileName))
+func (s *Storage) DownloadFile(ctx context.Context, fileID, fileName string) (string, error) {
+	opts := &storage.SignedURLOptions{
+		Scheme:  storage.SigningSchemeV4,
+		Method:  "GET",
+		Expires: time.Now().Add(15 * time.Minute),
+	}
+
+	u, err := s.Client.Bucket(s.Bucket).SignedURL(fileName, opts)
 	if err != nil {
-		return fmt.Errorf("cannot create file: %w", err)
+		return "", fmt.Errorf("cannot created file URL: %w", err)
 	}
 
-	rc, err := s.Client.Bucket(s.Bucket).Object(fileID).NewReader(ctx)
-	if err != nil {
-		return fmt.Errorf("cannot read object: %w", err)
-	}
-
-	if _, err := io.Copy(f, rc); err != nil {
-		return fmt.Errorf("cannot copy object to file: %w", err)
-	}
-
-	if err = f.Close(); err != nil {
-		return fmt.Errorf("cannot close file: %w", err)
-	}
-	if err = rc.Close(); err != nil {
-		return fmt.Errorf("cannot close file reader: %w", err)
-	}
-
-	return nil
+	return u, nil
 }
 
 // UploadFileToStorage uploads file to object storage.
