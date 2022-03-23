@@ -29,30 +29,3 @@ jobs:
         with:
           push: true
           tags: ${{ secrets.DOCKERHUB_USERNAME }}/referral:${{steps.sha.outputs.tag}}, ${{ secrets.DOCKERHUB_USERNAME }}/referral:latest
-
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Download task definition
-        run: |
-          aws ecs describe-task-definition --task-definition referral-api --query taskDefinition > task-definition.json
-
-      - name: Fill in the new image ID in the Amazon ECS task definition
-        id: task-def
-        uses: aws-actions/amazon-ecs-render-task-definition@v1
-        with:
-          task-definition: task-definition.json
-          container-name: referral-api
-          image: ${{ secrets.DOCKERHUB_USERNAME }}/referral:${{steps.sha.outputs.tag}}
-
-      - name: Deploy Amazon ECS task definition
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
-        with:
-          task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: referral-api-service
-          cluster: referral-ecs-dev-g4ch79v4
-          wait-for-service-stability: true
