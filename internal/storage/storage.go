@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
-	"os"
 	"time"
 
 	"cloud.google.com/go/storage"
@@ -22,7 +21,7 @@ type Storage struct {
 
 // NewStorage creates a new instance of Storage.
 func NewStorage(cfg *config.GCS) (*Storage, error) {
-	newClient, err := storage.NewClient(context.Background(), option.WithAPIKey(os.Getenv("API_KEY")))
+	newClient, err := storage.NewClient(context.Background(), option.WithAPIKey(cfg.APIKey))
 	if err != nil {
 		return &Storage{}, fmt.Errorf("cannot create new client of object storage: %w", err)
 	}

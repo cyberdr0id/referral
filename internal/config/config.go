@@ -22,8 +22,8 @@ type JWT struct {
 
 // GCS consist of necessary parameters for work with Google object storage.
 type GCS struct {
-	Bucket          string `envconfig:"GOOGLE_BUCKET_NAME"`
-	CredentialsPath string `envconfig:"GCS_CREDENTIALS_PATH"`
+	Bucket string `envconfig:"GOOGLE_BUCKET_NAME"`
+	APIKey string `envconfig:"API_KEY"`
 }
 
 // Application has parameters for starting application.
