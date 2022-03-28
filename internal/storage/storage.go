@@ -21,7 +21,20 @@ type Storage struct {
 
 // NewStorage creates a new instance of Storage.
 func NewStorage(cfg *config.GCS) (*Storage, error) {
-	newClient, err := storage.NewClient(context.Background(), option.WithAPIKey(cfg.APIKey))
+	options := fmt.Sprintf(`{
+		"type": "%s",
+		"project_id": "%s",
+		"private_key_id": "%s",
+		"private_key": "-----BEGIN PRIVATE KEY-----\n%s\n-----END PRIVATE KEY-----\n",
+		"client_email": "%s",
+		"client_id": "%s",
+		"auth_uri": "%s",
+		"token_uri": "%s",
+		"auth_provider_x509_cert_url": "%s",
+		"client_x509_cert_url": "%s"
+	}`, cfg.Type, cfg.ProjectID, cfg.PrivateKeyID, cfg.PrivateKey, cfg.ClientEmail, cfg.ClientID, cfg.AuthURI, cfg.TokenURI, cfg.AuthProvider, cfg.ClientURL)
+
+	newClient, err := storage.NewClient(context.Background(), option.WithCredentialsJSON([]byte(options)))
 	if err != nil {
 		return &Storage{}, fmt.Errorf("cannot create new client of object storage: %w", err)
 	}
