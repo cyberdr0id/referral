@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+
 	"github.com/kelseyhightower/envconfig"
 )
 
@@ -22,8 +24,17 @@ type JWT struct {
 
 // GCS consist of necessary parameters for work with Google object storage.
 type GCS struct {
-	Bucket          string `envconfig:"GOOGLE_BUCKET_NAME"`
-	CredentialsPath string `envconfig:"GCS_CREDENTIALS_PATH"`
+	Bucket       string `envconfig:"GOOGLE_BUCKET_NAME"`
+	Type         string `envconfig:"GOOGLE_TYPE"`
+	ProjectID    string `envconfig:"GOOGLE_PROJECT_ID"`
+	PrivateKeyID string `envconfig:"GOOGLE_PRIVATE_KEY_ID"`
+	PrivateKey   string `envconfig:"GOOGLE_PRIVATE_KEY"`
+	ClientEmail  string `envconfig:"GOOGLE_CLIENT_EMAIL"`
+	ClientID     string `envconfig:"GOOGLE_CLIENT_ID"`
+	AuthURI      string `envconfig:"GOOGLE_AUTH_URI"`
+	TokenURI     string `envconfig:"GOOGLE_TOKEN_URI"`
+	AuthProvider string `envconfig:"GOOGLE_AUTH_PROVIDER"`
+	ClientURL    string `envconfig:"GOOGLE_CLIENT_URL"`
 }
 
 // Application has parameters for starting application.
