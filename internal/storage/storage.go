@@ -13,6 +13,13 @@ import (
 	"google.golang.org/api/option"
 )
 
+const (
+	pdfType              = "application/pdf"
+	maxFileSize          = 32 << 20
+	optionExpirationTime = 15
+	getMethod            = "GET"
+)
+
 // Storage presents a type for work with Google cloud storage
 type Storage struct {
 	Client *storage.Client
@@ -49,8 +56,8 @@ func NewStorage(cfg *config.GCS) (*Storage, error) {
 func (s *Storage) DownloadFile(ctx context.Context, fileID, fileName string) (string, error) {
 	opts := &storage.SignedURLOptions{
 		Scheme:  storage.SigningSchemeV4,
-		Method:  "GET",
-		Expires: time.Now().Add(15 * time.Minute),
+		Method:  getMethod,
+		Expires: time.Now().Add(optionExpirationTime * time.Minute),
 	}
 
 	u, err := s.Client.Bucket(s.Bucket).SignedURL(fileName, opts)
@@ -65,8 +72,8 @@ func (s *Storage) DownloadFile(ctx context.Context, fileID, fileName string) (st
 func (s *Storage) UploadFileToStorage(ctx context.Context, file multipart.File, fileID string) error {
 	wc := s.Client.Bucket(s.Bucket).Object(fileID).NewWriter(ctx)
 
-	wc.Size = 32 << 20
-	wc.ContentType = "application/pdf"
+	wc.Size = maxFileSize
+	wc.ContentType = pdfType
 
 	if _, err := io.Copy(wc, file); err != nil {
 		return fmt.Errorf("cannot copy file info: %w", err)

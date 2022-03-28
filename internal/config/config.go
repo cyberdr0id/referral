@@ -59,6 +59,6 @@ func Load() (MainConfig, error) {
 	if c.App.Port == "" {
 		c.App.Port = "8000"
 	}
-	fmt.Println(c.App, c.DB, c.JWT, c.GCS)
+
 	return c, err
 }
