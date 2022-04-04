@@ -12,9 +12,6 @@ import (
 	"github.com/pborman/uuid"
 )
 
-// ErrInvalidParameter presetns an error when user input invalid parameter.
-var ErrInvalidParameter = errors.New("invalid parameter")
-
 // ReferralService presents access to referral service via repository.
 type ReferralService struct {
 	repo *repository.Repository
