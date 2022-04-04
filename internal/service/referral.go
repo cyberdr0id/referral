@@ -4,15 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"mime/multipart"
+
 	mycontext "github.com/cyberdr0id/referral/internal/context"
 	"github.com/cyberdr0id/referral/internal/repository"
 	"github.com/cyberdr0id/referral/internal/storage"
 	"github.com/pborman/uuid"
-	"mime/multipart"
 )
-
-// ErrInvalidParameter presetns an error when user input invalid parameter.
-var ErrInvalidParameter = errors.New("invalid parameter")
 
 // ReferralService presents access to referral service via repository.
 type ReferralService struct {

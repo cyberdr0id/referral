@@ -2,24 +2,29 @@ package service
 
 import (
 	"context"
-	"errors"
 
 	"github.com/cyberdr0id/referral/internal/repository"
 	myjwt "github.com/cyberdr0id/referral/pkg/jwt"
 )
 
-var (
+type Error string
+
+func (e Error) Error() string {
+	return string(e)
+}
+
+const (
 	// ErrNoUser handle an error when trying to get non-database user.
-	ErrNoUser = errors.New("user doesn't exists")
+	ErrNoUser = Error("user doesn't exists")
 
 	// ErrNoFile handle an error when user try to get non-database CV.
-	ErrNoFile = errors.New("there is no file with input id")
+	ErrNoFile = Error("there is no file with input id")
 
 	// ErrNoResult presents an error when there are no results for the entered data.
-	ErrNoResult = errors.New("there are no results for the entered data")
+	ErrNoResult = Error("there are no results for the entered data")
 
 	// ErrUserAlreadyExists handles an error when user tries to sign up with existing data.
-	ErrUserAlreadyExists = errors.New("user already exists")
+	ErrUserAlreadyExists = Error("user already exists")
 )
 
 // Auth presents interface for authorization and registration actions.

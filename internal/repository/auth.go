@@ -4,27 +4,44 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/lib/pq"
 )
 
-var (
+type Error string
+
+func (e Error) Error() string {
+	return string(e)
+}
+
+const (
 	// ErrNoUser handle an error when tyring to get non-database user.
-	ErrNoUser = errors.New("user doesn't exists")
+	ErrNoUser = Error("user doesn't exists")
 
 	// ErrNoFile handle an error when user try to get non-database CV.
-	ErrNoFile = errors.New("there is no file with input id")
+	ErrNoFile = Error("there is no file with input id")
 
 	// ErrNoResult presents an error when there are no results for the entered data.
-	ErrNoResult = errors.New("there are no results for the entered data")
+	ErrNoResult = Error("there are no results for the entered data")
 
 	// ErrUserAlreadyExists handles an error when user tries to sign up with existing data.
-	ErrUserAlreadyExists = errors.New("user already exists")
+	ErrUserAlreadyExists = Error("user already exists")
 )
 
 const (
 	errorCodeName = "unique_violation"
 )
+
+// User presents model of user.
+type User struct {
+	ID       string    `json:"id"`
+	Name     string    `json:"name"`
+	Password string    `json:"password"`
+	IsAdmin  bool      `json:"isadmin"`
+	Created  time.Time `json:"created"`
+	Updated  time.Time `json:"updated"`
+}
 
 // CreateUser registers a new user.
 func (r *Repository) CreateUser(name, password string) (string, error) {
