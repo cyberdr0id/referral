@@ -27,14 +27,14 @@ func NewReferralService(repo *repository.Repository, gcs *storage.Storage) *Refe
 }
 
 // SubmitCandidateRequest presents a type for reading data after submitting a candidate.
-type SubmitCandidateRequest struct {
+type CandidateSubmittingRequest struct {
 	File             multipart.File
 	CandidateName    string
 	CandidateSurname string
 }
 
 // AddCandidate creates request with candidate.
-func (s *ReferralService) AddCandidate(ctx context.Context, request SubmitCandidateRequest) (string, error) {
+func (s *ReferralService) AddCandidate(ctx context.Context, request CandidateSubmittingRequest) (string, error) {
 	userID, ok := mycontext.GetUserID(ctx)
 	if !ok {
 		return "", fmt.Errorf("cannot get user id from context")

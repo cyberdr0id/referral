@@ -130,8 +130,8 @@ func (s *Server) LogIn(rw http.ResponseWriter, r *http.Request) {
 	sendResponse(rw, LogInResponse{Token: token}, http.StatusOK)
 }
 
-// CandidateSendingResponse type that presents ID of sent candidate.
-type CandidateSendingResponse struct {
+// CandidateSubmittingResponse type that presents ID of sent candidate.
+type CandidateSubmittingResponse struct {
 	CandidateID string `json:"id"`
 }
 
@@ -149,7 +149,7 @@ func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 	}
 
-	request := service.SubmitCandidateRequest{
+	request := service.CandidateSubmittingRequest{
 		File:             f,
 		CandidateName:    r.FormValue(candidateNameParam),
 		CandidateSurname: r.FormValue(candidateSurnameParam),
@@ -167,7 +167,7 @@ func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	sendResponse(rw, CandidateSendingResponse{CandidateID: id}, http.StatusOK)
+	sendResponse(rw, CandidateSubmittingResponse{CandidateID: id}, http.StatusOK)
 }
 
 // GetRequests outputs all user requests.
@@ -365,7 +365,7 @@ func (r *LogInRequest) ValidateLogInRequest() error {
 }
 
 // ValidateCandidateSendingRequest validates data before candidate sending.
-func ValidateCandidateSendingRequest(r service.SubmitCandidateRequest) error {
+func ValidateCandidateSendingRequest(r service.CandidateSubmittingRequest) error {
 	if len(r.CandidateName) == 0 || len(r.CandidateSurname) == 0 {
 		return fmt.Errorf("%w: wrong length", ErrInvalidParameter)
 	}

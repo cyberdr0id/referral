@@ -37,7 +37,7 @@ type Auth interface {
 // Referral presents a type of CV interaction.
 type Referral interface {
 	GetRequests(userID, status string, pageNumber, pageSize int) ([]repository.UserRequests, error)
-	AddCandidate(ctx context.Context, request SubmitCandidateRequest) (string, error)
+	AddCandidate(ctx context.Context, request CandidateSubmittingRequest) (string, error)
 	DownloadFile(ctx context.Context, id string, userID string) error
 	UpdateRequest(id, status string) error
 }
