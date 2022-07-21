@@ -2,9 +2,10 @@ package jwt
 
 import (
 	"fmt"
-	"github.com/cyberdr0id/referral/internal/config"
 	"strconv"
 	"time"
+
+	"github.com/kelseyhightower/envconfig"
 
 	"github.com/dgrijalva/jwt-go"
 )
@@ -22,8 +23,18 @@ type TokenManager struct {
 	expiryTimeInHour int
 }
 
+type jwtConfig struct {
+	Key        string `envconfig:"JWT_KEY"`
+	ExpiryTime string `envconfig:"JWT_EXPIRY_TIME"`
+}
+
 // NewTokenManager creates a new instance of TokenManager.
-func NewTokenManager(config *config.JWT) (*TokenManager, error) {
+func NewTokenManager() (*TokenManager, error) {
+	config, err := loadConfig()
+	if err != nil {
+		return nil, fmt.Errorf("unable to load JWT token config: %w", err)
+	}
+
 	et, err := strconv.Atoi(config.ExpiryTime)
 	if err != nil {
 		return &TokenManager{}, fmt.Errorf("cannot convert expity time of JWT: %w", err)
@@ -65,4 +76,15 @@ func (t *TokenManager) ParseToken(_token string) (*Claims, error) {
 	}
 
 	return claims, nil
+}
+
+func loadConfig() (*jwtConfig, error) {
+	var c jwtConfig
+
+	err := envconfig.Process("jwt", &c)
+	if err != nil {
+		return nil, fmt.Errorf("unable load JWT config: %w", err)
+	}
+
+	return &c, nil
 }

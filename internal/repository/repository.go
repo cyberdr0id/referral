@@ -19,14 +19,6 @@ type ReferralRepository interface {
 	UpdateRequest(id, status string) error
 }
 
-// Candidate presents model of a sent candidate.
-type Candidate struct {
-	ID         string `json:"id"`
-	Name       string `json:"name"`
-	Surname    string `json:"surname"`
-	CVOSFileID string `json:"cvosfileid"`
-}
-
 // User presents model of user.
 type User struct {
 	ID       string    `json:"id"`
@@ -45,6 +37,16 @@ type Request struct {
 	Status      string    `json:"status"`
 	Created     time.Time `json:"created"`
 	Updated     time.Time `json:"updated"`
+}
+
+// Config
+type repositoryConfig struct {
+	Host         string `envconfig:"DB_HOST"`
+	User         string `envconfig:"DB_USER"`
+	Password     string `envconfig:"DB_PASSWORD"`
+	DatabaseName string `envconfig:"DB_NAME"`
+	Port         string `envconfig:"DB_PORT"`
+	SSLMode      string `envconfig:"DB_SSLMODE"`
 }
 
 // Repository type which presents connection between database and app logic.

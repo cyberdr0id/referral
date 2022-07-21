@@ -2,85 +2,100 @@
 package storage
 
 import (
-	"context"
 	"fmt"
 	"io"
-	"mime/multipart"
 	"time"
 
-	"cloud.google.com/go/storage"
-	"github.com/cyberdr0id/referral/internal/config"
-	"google.golang.org/api/option"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/kelseyhightower/envconfig"
 )
 
 const (
-	pdfType              = "application/pdf"
-	maxFileSize          = 32 << 20
-	optionExpirationTime = 15
-	getMethod            = "GET"
+	urlExpireTime = 10 * time.Minute
 )
 
-// Storage presents a type for work with Google cloud storage
-type Storage struct {
-	Client *storage.Client
-	Bucket string
+type storageConfig struct {
+	Bucket      string `envconfig:"AWS_BUCKET"`
+	Region      string `envconfig:"AWS_REGION"`
+	AccessKey   string `envconfig:"AWS_ACCESS_KEY"`
+	AccessKeyID string `envconfig:"AWS_ACCESS_KEY_ID"`
 }
 
-// NewStorage creates a new instance of Storage.
-func NewStorage(cfg *config.GCS) (*Storage, error) {
-	options := fmt.Sprintf(`{
-		"type": "%s",
-		"project_id": "%s",
-		"private_key_id": "%s",
-		"private_key": "-----BEGIN PRIVATE KEY-----\n%s\n-----END PRIVATE KEY-----\n",
-		"client_email": "%s",
-		"client_id": "%s",
-		"auth_uri": "%s",
-		"token_uri": "%s",
-		"auth_provider_x509_cert_url": "%s",
-		"client_x509_cert_url": "%s"
-	}`, cfg.Type, cfg.ProjectID, cfg.PrivateKeyID, cfg.PrivateKey, cfg.ClientEmail, cfg.ClientID, cfg.AuthURI, cfg.TokenURI, cfg.AuthProvider, cfg.ClientURL)
+type Storage struct {
+	cfg *storageConfig
+	s3  *s3.S3
+}
 
-	newClient, err := storage.NewClient(context.Background(), option.WithCredentialsJSON([]byte(options)))
+func NewStorage() (*Storage, error) {
+	cfg, err := loadConfig()
 	if err != nil {
-		return &Storage{}, fmt.Errorf("cannot create new client of object storage: %w", err)
+		return nil, fmt.Errorf("error with config loading: %w", err)
+	}
+
+	sn, err := session.NewSession(&aws.Config{
+		Region:      aws.String(cfg.Region),
+		Credentials: credentials.NewStaticCredentials(cfg.AccessKeyID, cfg.AccessKey, ""),
+	})
+	if err != nil {
+		return &Storage{}, fmt.Errorf("unable to create session: %w", err)
 	}
 
 	return &Storage{
-		Client: newClient,
-		Bucket: cfg.Bucket,
+		s3:  s3.New(sn),
+		cfg: cfg,
 	}, nil
 }
 
-// DownloadFile downloads a file from object storage by file id.
-func (s *Storage) DownloadFile(ctx context.Context, fileID, fileName string) (string, error) {
-	opts := &storage.SignedURLOptions{
-		Scheme:  storage.SigningSchemeV4,
-		Method:  getMethod,
-		Expires: time.Now().Add(optionExpirationTime * time.Minute),
-	}
+func loadConfig() (*storageConfig, error) {
+	var c storageConfig
 
-	u, err := s.Client.Bucket(s.Bucket).SignedURL(fileName, opts)
+	err := envconfig.Process("aws", &c)
 	if err != nil {
-		return "", fmt.Errorf("cannot created file URL: %w", err)
+		return nil, fmt.Errorf("error with config loading: %w", err)
 	}
 
-	return u, nil
+	return &c, nil
 }
 
-// UploadFileToStorage uploads file to object storage.
-func (s *Storage) UploadFileToStorage(ctx context.Context, file multipart.File, fileID string) error {
-	wc := s.Client.Bucket(s.Bucket).Object(fileID).NewWriter(ctx)
-
-	wc.Size = maxFileSize
-	wc.ContentType = pdfType
-
-	if _, err := io.Copy(wc, file); err != nil {
-		return fmt.Errorf("cannot copy file info: %w", err)
-	}
-	if err := wc.Close(); err != nil {
-		return fmt.Errorf("cannot close file writer: %w", err)
+func (s *Storage) UploadFile(file io.ReadSeeker, fileName string) error {
+	_, err := s.s3.PutObject(&s3.PutObjectInput{
+		Body:   file,
+		Bucket: aws.String(s.cfg.Bucket),
+		Key:    aws.String(fileName),
+		ACL:    aws.String(s3.BucketCannedACLPublicRead),
+	})
+	if err != nil {
+		return fmt.Errorf("unable put file to object storage: %w", err)
 	}
 
 	return nil
+}
+
+func (s *Storage) DownloadFile(fileID string) (io.ReadCloser, error) {
+	resp, err := s.s3.GetObject(&s3.GetObjectInput{
+		Bucket: aws.String(s.cfg.Bucket),
+		Key:    aws.String(fileID),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("unable to get object with key %s from storage: %w", fileID, err)
+	}
+
+	return resp.Body, nil
+}
+
+func (s *Storage) GetFileURL(fileID string) (string, error) {
+	req, _ := s.s3.GetObjectRequest(&s3.GetObjectInput{
+		Bucket: aws.String(s.cfg.Bucket),
+		Key:    aws.String(fileID),
+	})
+
+	url, err := req.Presign(urlExpireTime)
+	if err != nil {
+		return "", fmt.Errorf("unable create request's signed URL: %w", err)
+	}
+
+	return url, nil
 }

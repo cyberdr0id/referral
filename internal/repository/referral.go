@@ -13,6 +13,13 @@ type UserRequests struct {
 	Surname string `json:"surname"`
 	Status  string `json:"status"`
 	Updated string `json:"updated"`
+	Author  author `json:"author"`
+}
+
+type author struct {
+	ID      string `json:"id"`
+	Name    string `json:"name"`
+	IsAdmin bool   `json:"isadmin"`
 }
 
 // GetRequests gives user requests by id.
@@ -54,11 +61,18 @@ func (r *Repository) GetRequests(id, status string, pageNumber, pageSize int) ([
 		return nil, fmt.Errorf("error with query executing: %w", err)
 	}
 
+	// user, _ := r.GetUser(id)
+
 	for rows.Next() {
 		request := UserRequests{}
 
-		if err := rows.Scan(&request.ID, &request.Name, &request.Surname,
-			&request.Status, &request.Updated); err != nil {
+		if err := rows.Scan(
+			&request.ID,
+			&request.Name,
+			&request.Surname,
+			&request.Status,
+			&request.Updated,
+		); err != nil {
 			return nil, fmt.Errorf("cannot get requests information: %w", err)
 		}
 
