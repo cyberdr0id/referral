@@ -34,7 +34,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
 
       - name: Create database
         run: psql -h ${{env.DB_HOST}} -U ${{env.DB_USER}} -d ${{env.DB_NAME}} -f scripts/init/_main_script.sql
@@ -44,7 +44,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v2
         with:
-          go-version: '1.16.5'
+          go-version: '1.18.3'
 
       - name: Execute unit tests
         run : go test -v ./internal/*
