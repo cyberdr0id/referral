@@ -2,7 +2,7 @@ module github.com/cyberdr0id/referral
 
 // +heroku goVersion go1.16
 
-go 1.16
+go 1.18
 
 require github.com/gorilla/mux v1.8.0
 
@@ -22,10 +22,16 @@ require (
 require github.com/pborman/uuid v1.2.1
 
 require (
-	cloud.google.com/go/storage v1.21.0
+	github.com/jmespath/go-jmespath v0.4.0 // indirect
+	github.com/pmezard/go-difflib v1.0.0 // indirect
+)
+
+require (
 	github.com/DATA-DOG/go-sqlmock v1.5.0
+	github.com/aws/aws-sdk-go v1.44.58
+	github.com/google/uuid v1.3.0 // indirect
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/kr/pretty v0.2.0 // indirect
-	google.golang.org/api v0.69.0
+	golang.org/x/net v0.0.0-20220624214902-1bab6f366d9e // indirect
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 )
