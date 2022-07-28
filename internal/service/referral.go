@@ -17,15 +17,15 @@ var ErrInvalidParameter = errors.New("invalid parameter")
 
 // ReferralService presents access to referral service via repository.
 type ReferralService struct {
-	repo *repository.Repository
-	gcs  *storage.Storage
+	repo    *repository.Repository
+	storage *storage.Storage
 }
 
 // NewReferralService creates a new instance of ReferralService.
-func NewReferralService(repo *repository.Repository, gcs *storage.Storage) *ReferralService {
+func NewReferralService(repo *repository.Repository, storage *storage.Storage) *ReferralService {
 	return &ReferralService{
-		repo: repo,
-		gcs:  gcs,
+		repo:    repo,
+		storage: storage,
 	}
 }
 
@@ -34,6 +34,7 @@ type SubmitCandidateRequest struct {
 	File             multipart.File
 	CandidateName    string
 	CandidateSurname string
+	Filetype         string
 }
 
 // AddCandidate creates request with candidate.
@@ -44,13 +45,14 @@ func (s *ReferralService) AddCandidate(ctx context.Context, request SubmitCandid
 	}
 
 	fileID := uuid.NewRandom().String()
+	filename := fileID + "." + request.Filetype
 
-	err := s.gcs.UploadFileToStorage(ctx, request.File, fileID)
+	err := s.storage.UploadFile(request.File, filename)
 	if err != nil {
 		return "", fmt.Errorf("cannot load file to object storage: %w", err)
 	}
 
-	id, err := s.repo.AddCandidate(userID, request.CandidateName, request.CandidateSurname, fileID)
+	id, err := s.repo.AddCandidate(userID, request.CandidateName, request.CandidateSurname, filename)
 	if err != nil {
 		return "", fmt.Errorf("cannot add candidate to database: %w", err)
 	}
@@ -78,7 +80,7 @@ func (s *ReferralService) DownloadFile(ctx context.Context, candidateID string, 
 		return "", fmt.Errorf("cannot get file id from object storage: %w", err)
 	}
 
-	url, err := s.gcs.DownloadFile(ctx, fileID, fileID)
+	url, err := s.storage.GetFileURL(fileID)
 	if err != nil {
 		return "", fmt.Errorf("cannot download file from object storage: %w", err)
 	}

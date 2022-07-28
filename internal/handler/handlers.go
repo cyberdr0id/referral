@@ -33,10 +33,10 @@ type ErrorResponse struct {
 	Message string `json:"error"`
 }
 
-// ErrInvalidParameter presetns an error when user enters invalid parameter.
+// ErrInvalidParameter presents an error when user enters invalid parameter.
 var ErrInvalidParameter = errors.New("invalid parameter")
 
-// sendResponse sends resposne with specified object in body.
+// sendResponse sends response with specified object in body.
 func sendResponse(w http.ResponseWriter, resp interface{}, code int) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)
@@ -148,11 +148,12 @@ func (s *Server) SendCandidate(rw http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		sendResponse(rw, ErrorResponse{Message: err.Error()}, http.StatusBadRequest)
 	}
-
+	filetype := strings.Split(fileHeader.Filename, ".")
 	request := service.SubmitCandidateRequest{
 		File:             f,
 		CandidateName:    r.FormValue(candidateNameParam),
 		CandidateSurname: r.FormValue(candidateSurnameParam),
+		Filetype:         filetype[len(filetype)-1],
 	}
 
 	if err := ValidateCandidateSendingRequest(request); err != nil {
